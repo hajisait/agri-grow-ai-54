@@ -41,8 +41,8 @@ function DiseasePage() {
     setLoading(true);
     setResult(null);
     try {
-      const prompt = `A farmer uploaded a photo of a ${crop} crop leaf.${symptoms ? ` Reported symptoms: ${symptoms}.` : ""} Based on common ${crop} diseases, provide a likely diagnosis structured as:\n\n**Likely disease:** ...\n**Confidence:** Low/Medium/High\n**Symptoms to confirm:** ...\n**Treatment:** ...\n**Prevention:** ...\n\nKeep it concise and practical for a smallholder farmer.`;
-      const res = await ask({ data: { messages: [{ role: "user", content: prompt }] } });
+      const prompt = `You are inspecting a photo of a ${crop} crop leaf provided by a farmer.${symptoms ? ` Reported symptoms: ${symptoms}.` : ""} Analyze the image carefully and respond as:\n\n**Likely disease:** ...\n**Confidence:** Low/Medium/High\n**Visible symptoms in image:** ...\n**Treatment:** ...\n**Prevention:** ...\n\nIf the image does not show a plant/leaf, say so clearly. Keep it concise and practical for a smallholder farmer.`;
+      const res = await ask({ data: { messages: [{ role: "user", content: prompt }], imageDataUrl: preview } });
       setResult(res.reply);
     } catch {
       setResult("Sorry, analysis failed. Please retry.");
