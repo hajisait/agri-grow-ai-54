@@ -74,7 +74,7 @@ function AssistantPage() {
     }
     const recog = new SR() as {
       lang: string; interimResults: boolean; continuous: boolean;
-      onresult: (e: { results: { 0: { 0: { transcript: string } } }[] }) => void;
+      onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void;
       onend: () => void; start: () => void; stop: () => void;
     };
     recog.lang = "en-IN";
