@@ -6,12 +6,17 @@ const schema = z.object({
     .array(
       z.object({
         role: z.enum(["user", "assistant", "system"]),
-        content: z.string().min(1).max(4000),
+        content: z.string().min(1).max(8000),
       }),
     )
     .min(1)
     .max(40),
   language: z.string().min(2).max(20).optional(),
+  imageDataUrl: z
+    .string()
+    .max(12_000_000)
+    .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/)
+    .optional(),
 });
 
 const SYSTEM_PROMPT = (language?: string) =>
