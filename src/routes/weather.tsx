@@ -1,0 +1,171 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Search, CloudSun, Droplets, Wind, Thermometer, MapPin } from "lucide-react";
+import { Nav } from "@/components/site/Nav";
+import { Footer } from "@/components/site/Footer";
+
+export const Route = createFileRoute("/weather")({
+  head: () => ({
+    meta: [
+      { title: "Live Weather — AgriAI Assist" },
+      { name: "description", content: "Real-time village-level weather, forecasts, and rain alerts for farmers." },
+      { property: "og:title", content: "Live Weather — AgriAI Assist" },
+      { property: "og:description", content: "Real-time village-level weather and rain alerts." },
+    ],
+  }),
+  component: WeatherPage,
+});
+
+type Current = {
+  temperature_2m: number;
+  relative_humidity_2m: number;
+  wind_speed_10m: number;
+  weather_code: number;
+  apparent_temperature: number;
+};
+type Daily = {
+  time: string[];
+  temperature_2m_max: number[];
+  temperature_2m_min: number[];
+  precipitation_probability_max: number[];
+  weather_code: number[];
+};
+type Place = { name: string; country: string; admin1?: string; latitude: number; longitude: number };
+
+const WMO: Record<number, string> = {
+  0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Foggy", 48: "Rime fog", 51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+  61: "Light rain", 63: "Rain", 65: "Heavy rain", 71: "Light snow", 73: "Snow", 75: "Heavy snow",
+  80: "Showers", 81: "Heavy showers", 82: "Violent showers", 95: "Thunderstorm", 96: "Thunderstorm + hail", 99: "Severe storm",
+};
+
+function WeatherPage() {
+  const [query, setQuery] = useState("");
+  const [place, setPlace] = useState<Place | null>(null);
+  const [current, setCurrent] = useState<Current | null>(null);
+  const [daily, setDaily] = useState<Daily | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function search(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!query.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const geo = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`,
+      ).then((r) => r.json());
+      const first = geo.results?.[0];
+      if (!first) {
+        setError("Location not found. Try another village or city.");
+        setLoading(false);
+        return;
+      }
+      const p: Place = {
+        name: first.name, country: first.country, admin1: first.admin1,
+        latitude: first.latitude, longitude: first.longitude,
+      };
+      setPlace(p);
+      const wx = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`,
+      ).then((r) => r.json());
+      setCurrent(wx.current);
+      setDaily(wx.daily);
+    } catch {
+      setError("Network error. Please retry.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <Nav />
+      <main className="max-w-6xl mx-auto px-4 md:px-6 pt-10 pb-16">
+        <div className="text-center mb-8 animate-fade-up">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">Live Weather</h1>
+          <p className="text-foreground/60 mt-2">Search any village or city worldwide</p>
+        </div>
+
+        <form onSubmit={search} className="max-w-xl mx-auto flex gap-2 mb-8">
+          <div className="flex-grow relative">
+            <Search className="size-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. Coimbatore, Punjab, Bali…"
+              className="w-full bg-white/70 border border-white/80 rounded-full pl-11 pr-5 py-3 text-sm outline-none focus:border-primary/50 focus:bg-white"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-full text-sm font-bold shadow-[var(--shadow-glow-primary)] disabled:opacity-50"
+          >
+            {loading ? "Searching…" : "Search"}
+          </button>
+        </form>
+
+        {error ? (
+          <p className="text-center text-sm text-destructive mb-6">{error}</p>
+        ) : null}
+
+        {place && current ? (
+          <div className="grid md:grid-cols-3 gap-5 animate-fade-up">
+            <div className="md:col-span-2 glass-panel rounded-[2rem] p-8">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <p className="text-sm text-foreground/60 flex items-center gap-1.5"><MapPin className="size-3.5" /> {place.admin1 ? `${place.admin1}, ` : ""}{place.country}</p>
+                  <h2 className="text-3xl font-extrabold tracking-tight">{place.name}</h2>
+                </div>
+                <CloudSun className="size-14 text-[color:var(--sky-brand)]" />
+              </div>
+              <div className="flex items-end gap-4 mb-8">
+                <span className="text-7xl md:text-8xl font-extrabold tracking-tighter">
+                  {Math.round(current.temperature_2m)}°
+                </span>
+                <span className="pb-3 text-foreground/60 font-medium">
+                  {WMO[current.weather_code] ?? "—"} · feels {Math.round(current.apparent_temperature)}°
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <WeatherStat icon={<Droplets className="size-4" />} label="Humidity" value={`${current.relative_humidity_2m}%`} />
+                <WeatherStat icon={<Wind className="size-4" />} label="Wind" value={`${Math.round(current.wind_speed_10m)} km/h`} />
+                <WeatherStat icon={<Thermometer className="size-4" />} label="Feels like" value={`${Math.round(current.apparent_temperature)}°`} />
+              </div>
+            </div>
+
+            <div className="glass-panel rounded-[2rem] p-6">
+              <h3 className="font-bold mb-4">7-Day Forecast</h3>
+              <div className="space-y-2">
+                {daily?.time.map((d, i) => (
+                  <div key={d} className="flex items-center justify-between text-sm py-2 border-b border-foreground/5 last:border-0">
+                    <span className="font-semibold w-12">
+                      {i === 0 ? "Today" : new Date(d).toLocaleDateString("en", { weekday: "short" })}
+                    </span>
+                    <span className="text-foreground/60 text-xs truncate flex-grow px-2">{WMO[daily.weather_code[i]] ?? "—"}</span>
+                    <span className="text-[color:var(--sky-brand)] text-xs font-bold w-10 text-right">{daily.precipitation_probability_max[i] ?? 0}%</span>
+                    <span className="font-mono font-bold w-16 text-right">{Math.round(daily.temperature_2m_min[i])}°/{Math.round(daily.temperature_2m_max[i])}°</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-foreground/40 text-sm mt-12">Search a location to see live weather.</div>
+        )}
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+function WeatherStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="bg-white/50 rounded-2xl p-4">
+      <p className="text-[10px] uppercase font-bold tracking-widest text-foreground/50 mb-1 flex items-center gap-1.5">{icon}{label}</p>
+      <p className="font-mono font-bold text-lg">{value}</p>
+    </div>
+  );
+}
