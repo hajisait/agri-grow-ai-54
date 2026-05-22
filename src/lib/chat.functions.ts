@@ -44,7 +44,16 @@ export const askAgriAI = createServerFn({ method: "POST" })
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: SYSTEM_PROMPT(data.language) },
-            ...data.messages,
+            ...data.messages.slice(0, -1),
+            data.imageDataUrl
+              ? {
+                  role: data.messages[data.messages.length - 1].role,
+                  content: [
+                    { type: "text", text: data.messages[data.messages.length - 1].content },
+                    { type: "image_url", image_url: { url: data.imageDataUrl } },
+                  ],
+                }
+              : data.messages[data.messages.length - 1],
           ],
         }),
       });
