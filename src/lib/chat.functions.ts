@@ -69,7 +69,7 @@ export const askAgriAI = createServerFn({ method: "POST" })
 
     // Rate limit by client IP
     try {
-      const req = getWebRequest();
+      const req = getRequest();
       const ip =
         req?.headers.get("cf-connecting-ip") ??
         req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
