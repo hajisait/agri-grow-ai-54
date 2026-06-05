@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
-import { CloudSun, Mic, Sparkles, Wind, Camera, Wheat, TrendingDown, TrendingUp } from "lucide-react";
+import { WeatherWidget } from "@/components/site/WeatherWidget";
+import { useI18n } from "@/lib/i18n";
+import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp } from "lucide-react";
 import heroField from "@/assets/hero-field.jpg";
 import cropLeaf from "@/assets/crop-leaf.jpg";
 
