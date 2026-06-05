@@ -47,6 +47,15 @@ function WeatherPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadWeather(p: Place) {
+    setPlace(p);
+    const wx = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`,
+    ).then((r) => r.json());
+    setCurrent(wx.current);
+    setDaily(wx.daily);
+  }
+
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
     if (!query.trim()) return;
@@ -62,21 +71,49 @@ function WeatherPage() {
         setLoading(false);
         return;
       }
-      const p: Place = {
+      await loadWeather({
         name: first.name, country: first.country, admin1: first.admin1,
         latitude: first.latitude, longitude: first.longitude,
-      };
-      setPlace(p);
-      const wx = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`,
-      ).then((r) => r.json());
-      setCurrent(wx.current);
-      setDaily(wx.daily);
+      });
     } catch {
       setError("Network error. Please retry.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported in this browser.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const rev = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&language=en&format=json`,
+          ).then((r) => r.json()).catch(() => ({ results: [] }));
+          const first = rev.results?.[0];
+          await loadWeather({
+            name: first?.name ?? "My location",
+            country: first?.country ?? "",
+            admin1: first?.admin1,
+            latitude, longitude,
+          });
+        } catch {
+          setError("Could not load weather for your location.");
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setError("Location permission denied.");
+        setLoading(false);
+      },
+    );
   }
 
   return (
@@ -88,8 +125,8 @@ function WeatherPage() {
           <p className="text-foreground/60 mt-2">Search any village or city worldwide</p>
         </div>
 
-        <form onSubmit={search} className="max-w-xl mx-auto flex gap-2 mb-8">
-          <div className="flex-grow relative">
+        <form onSubmit={search} className="max-w-xl mx-auto flex flex-wrap gap-2 mb-8">
+          <div className="flex-grow relative min-w-[200px]">
             <Search className="size-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
             <input
               value={query}
@@ -103,7 +140,16 @@ function WeatherPage() {
             disabled={loading}
             className="bg-primary text-primary-foreground px-6 py-3 rounded-full text-sm font-bold shadow-[var(--shadow-glow-primary)] disabled:opacity-50"
           >
-            {loading ? "Searching…" : "Search"}
+            {loading ? "Loading…" : "Search"}
+          </button>
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={loading}
+            className="bg-white/70 border border-white/80 text-primary px-4 py-3 rounded-full text-sm font-bold flex items-center gap-1.5 hover:bg-white disabled:opacity-50"
+            title="Use my location"
+          >
+            <LocateFixed className="size-4" /> My location
           </button>
         </form>
 
