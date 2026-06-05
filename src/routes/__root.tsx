@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { I18nProvider } from "@/lib/i18n";
 
 function NotFoundComponent() {
   return (
@@ -83,6 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Lovable App" },
       { name: "twitter:description", content: "AgriAI Assist is a modern, AI-powered web application that provides farmers with comprehensive advisory services." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b3254117-5392-487e-b279-dfce142b5958/id-preview-3935d2a6--d5a9f1e4-f445-43be-992d-c4f841e03ca5.lovable.app-1780666044329.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b3254117-5392-487e-b279-dfce142b5958/id-preview-3935d2a6--d5a9f1e4-f445-43be-992d-c4f841e03ca5.lovable.app-1780666044329.png" },
     ],
     links: [
       {
@@ -116,9 +117,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <Outlet />
-      </I18nProvider>
+      <Outlet />
     </QueryClientProvider>
   );
 }
