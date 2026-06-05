@@ -40,14 +40,14 @@ function Landing() {
 
           <div className="relative z-10 text-center space-y-6 animate-fade-up">
             <span className="inline-block px-4 py-1.5 rounded-full bg-white/70 border border-white/80 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-              Intelligent Agriculture 2.0
+              {t("hero.badge")}
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter text-balance leading-[0.92]">
-              Smart AI Farming{" "}
-              <span className="text-[color:var(--sky-brand)]">Assistant</span>
+              {t("hero.title1")}{" "}
+              <span className="text-[color:var(--sky-brand)]">{t("hero.title2")}</span>
             </h1>
             <p className="max-w-xl mx-auto text-base md:text-lg text-foreground/70 text-pretty font-medium">
-              Optimize yields, diagnose diseases, and track real-time weather with your pocket-sized agronomist.
+              {t("hero.sub")}
             </p>
 
             <div className="grid md:grid-cols-3 gap-4 pt-10 max-w-4xl mx-auto text-left">
@@ -55,22 +55,22 @@ function Landing() {
                 to="/assistant"
                 icon={<Sparkles className="size-5" />}
                 tint="bg-primary/10 text-primary"
-                title="Ask AgriAI"
-                body="Get instant answers about fertilizers, pests, and soil health."
+                title={t("cta.ask.title")}
+                body={t("cta.ask.body")}
               />
               <CTACard
                 to="/disease"
                 icon={<Camera className="size-5" />}
                 tint="bg-[color:var(--sky-brand)]/10 text-[color:var(--sky-brand)]"
-                title="Upload Crop"
-                body="Snap a photo to detect diseases with AI-powered accuracy."
+                title={t("cta.upload.title")}
+                body={t("cta.upload.body")}
               />
               <CTACard
                 to="/weather"
                 icon={<CloudSun className="size-5" />}
                 tint="bg-[color:var(--amber-brand)]/15 text-[color:var(--amber-brand)]"
-                title="Check Weather"
-                body="Local village-level forecasting with precision rain alerts."
+                title={t("cta.weather.title")}
+                body={t("cta.weather.body")}
               />
             </div>
           </div>
