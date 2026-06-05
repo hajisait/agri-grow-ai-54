@@ -139,27 +139,8 @@ function Landing() {
               </div>
             </div>
 
-            {/* Weather widget */}
-            <div className="md:col-span-4 glass-panel p-6 md:p-8 rounded-[2rem] flex flex-col justify-between">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight mb-1">Weather Dash</h2>
-                <p className="text-sm text-foreground/60 mb-6">Punjab Region · Sector 4</p>
-                <div className="flex items-center gap-4 mb-8">
-                  <span className="text-6xl font-extrabold tracking-tighter">28°</span>
-                  <CloudSun className="size-12 text-[color:var(--sky-brand)]" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Stat label="Humidity" value="64%" />
-                  <Stat label="Wind" value="12 km/h" icon={<Wind className="size-3" />} />
-                </div>
-              </div>
-              <div className="mt-8 pt-6 border-t border-foreground/5">
-                <p className="text-sm font-semibold text-[color:var(--sky-brand)] flex items-center gap-2">
-                  <span className="size-2 bg-[color:var(--sky-brand)] rounded-full" />
-                  No rain forecast for 48 hours
-                </p>
-              </div>
-            </div>
+            {/* Weather widget — live, syncs with /weather */}
+            <WeatherWidget />
 
             {/* Disease */}
             <Link to="/disease" className="md:col-span-4 glass-panel p-5 rounded-[2rem] hover:bg-white/65 transition-all group">
