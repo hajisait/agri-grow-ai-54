@@ -28,6 +28,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const { t } = useI18n();
   return (
     <>
       <Nav />
