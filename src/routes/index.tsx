@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
-import { CloudSun, Mic, Sparkles, Wind, Camera, Wheat, TrendingDown, TrendingUp } from "lucide-react";
+import { WeatherWidget } from "@/components/site/WeatherWidget";
+import { useI18n } from "@/lib/i18n";
+import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp } from "lucide-react";
 import heroField from "@/assets/hero-field.jpg";
 import cropLeaf from "@/assets/crop-leaf.jpg";
 
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const { t } = useI18n();
   return (
     <>
       <Nav />
@@ -37,14 +40,14 @@ function Landing() {
 
           <div className="relative z-10 text-center space-y-6 animate-fade-up">
             <span className="inline-block px-4 py-1.5 rounded-full bg-white/70 border border-white/80 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-              Intelligent Agriculture 2.0
+              {t("hero.badge")}
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter text-balance leading-[0.92]">
-              Smart AI Farming{" "}
-              <span className="text-[color:var(--sky-brand)]">Assistant</span>
+              {t("hero.title1")}{" "}
+              <span className="text-[color:var(--sky-brand)]">{t("hero.title2")}</span>
             </h1>
             <p className="max-w-xl mx-auto text-base md:text-lg text-foreground/70 text-pretty font-medium">
-              Optimize yields, diagnose diseases, and track real-time weather with your pocket-sized agronomist.
+              {t("hero.sub")}
             </p>
 
             <div className="grid md:grid-cols-3 gap-4 pt-10 max-w-4xl mx-auto text-left">
@@ -52,22 +55,22 @@ function Landing() {
                 to="/assistant"
                 icon={<Sparkles className="size-5" />}
                 tint="bg-primary/10 text-primary"
-                title="Ask AgriAI"
-                body="Get instant answers about fertilizers, pests, and soil health."
+                title={t("cta.ask.title")}
+                body={t("cta.ask.body")}
               />
               <CTACard
                 to="/disease"
                 icon={<Camera className="size-5" />}
                 tint="bg-[color:var(--sky-brand)]/10 text-[color:var(--sky-brand)]"
-                title="Upload Crop"
-                body="Snap a photo to detect diseases with AI-powered accuracy."
+                title={t("cta.upload.title")}
+                body={t("cta.upload.body")}
               />
               <CTACard
                 to="/weather"
                 icon={<CloudSun className="size-5" />}
                 tint="bg-[color:var(--amber-brand)]/15 text-[color:var(--amber-brand)]"
-                title="Check Weather"
-                body="Local village-level forecasting with precision rain alerts."
+                title={t("cta.weather.title")}
+                body={t("cta.weather.body")}
               />
             </div>
           </div>
@@ -136,27 +139,8 @@ function Landing() {
               </div>
             </div>
 
-            {/* Weather widget */}
-            <div className="md:col-span-4 glass-panel p-6 md:p-8 rounded-[2rem] flex flex-col justify-between">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight mb-1">Weather Dash</h2>
-                <p className="text-sm text-foreground/60 mb-6">Punjab Region · Sector 4</p>
-                <div className="flex items-center gap-4 mb-8">
-                  <span className="text-6xl font-extrabold tracking-tighter">28°</span>
-                  <CloudSun className="size-12 text-[color:var(--sky-brand)]" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Stat label="Humidity" value="64%" />
-                  <Stat label="Wind" value="12 km/h" icon={<Wind className="size-3" />} />
-                </div>
-              </div>
-              <div className="mt-8 pt-6 border-t border-foreground/5">
-                <p className="text-sm font-semibold text-[color:var(--sky-brand)] flex items-center gap-2">
-                  <span className="size-2 bg-[color:var(--sky-brand)] rounded-full" />
-                  No rain forecast for 48 hours
-                </p>
-              </div>
-            </div>
+            {/* Weather widget — live, syncs with /weather */}
+            <WeatherWidget />
 
             {/* Disease */}
             <Link to="/disease" className="md:col-span-4 glass-panel p-5 rounded-[2rem] hover:bg-white/65 transition-all group">
@@ -219,14 +203,6 @@ function CTACard({
   );
 }
 
-function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
-  return (
-    <div className="p-3.5 bg-white/50 rounded-2xl">
-      <p className="text-[10px] uppercase font-bold tracking-widest opacity-50 mb-1 flex items-center gap-1">{icon}{label}</p>
-      <p className="font-mono font-bold">{value}</p>
-    </div>
-  );
-}
 
 function PriceRow({
   icon, name, grade, price, change, up,
