@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, CloudSun, Droplets, Wind, Thermometer, MapPin } from "lucide-react";
+import { Search, CloudSun, Droplets, Wind, Thermometer, MapPin, LocateFixed } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 
