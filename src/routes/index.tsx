@@ -203,14 +203,6 @@ function CTACard({
   );
 }
 
-function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
-  return (
-    <div className="p-3.5 bg-white/50 rounded-2xl">
-      <p className="text-[10px] uppercase font-bold tracking-widest opacity-50 mb-1 flex items-center gap-1">{icon}{label}</p>
-      <p className="font-mono font-bold">{value}</p>
-    </div>
-  );
-}
 
 function PriceRow({
   icon, name, grade, price, change, up,
