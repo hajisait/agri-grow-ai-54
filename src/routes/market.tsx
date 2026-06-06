@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Search, TrendingDown, TrendingUp, ArrowUpDown, ExternalLink, RefreshCw } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { useI18n } from "@/lib/i18n";
+import { getMarketPrices, type MarketCrop } from "@/lib/agri-data.functions";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
@@ -17,58 +19,37 @@ export const Route = createFileRoute("/market")({
   component: MarketPage,
 });
 
-type Crop = {
-  name: string; emoji: string; grade: string; price: number; change: number;
-  spark: number[]; state: string; mandi: string;
-};
-
-const SEED: Crop[] = [
-  { name: "Basmati Rice", emoji: "🌾", grade: "Grade A Premium", price: 4200, change: 2.4, spark: [38, 42, 40, 45, 48, 47, 52], state: "Punjab", mandi: "Karnal" },
-  { name: "Wheat", emoji: "🌾", grade: "Sharbati", price: 2480, change: 1.2, spark: [22, 23, 22, 24, 25, 25, 26], state: "Madhya Pradesh", mandi: "Indore" },
-  { name: "Yellow Maize", emoji: "🌽", grade: "Common Grade", price: 2150, change: -0.8, spark: [24, 23, 22, 21, 22, 21, 21], state: "Karnataka", mandi: "Davangere" },
-  { name: "Tomato", emoji: "🍅", grade: "Hybrid F1", price: 1840, change: 5.1, spark: [12, 14, 13, 16, 17, 19, 21], state: "Maharashtra", mandi: "Nashik" },
-  { name: "Cotton", emoji: "🤍", grade: "Long Staple", price: 7250, change: -1.4, spark: [78, 77, 76, 75, 74, 73, 72], state: "Gujarat", mandi: "Rajkot" },
-  { name: "Onion", emoji: "🧅", grade: "Nashik Red", price: 1620, change: 3.2, spark: [14, 14, 15, 16, 17, 17, 18], state: "Maharashtra", mandi: "Lasalgaon" },
-  { name: "Potato", emoji: "🥔", grade: "Jyoti", price: 1280, change: -2.1, spark: [15, 15, 14, 13, 13, 12, 12], state: "Uttar Pradesh", mandi: "Agra" },
-  { name: "Soybean", emoji: "🫘", grade: "Yellow", price: 4480, change: 0.9, spark: [44, 44, 45, 44, 45, 45, 45], state: "Madhya Pradesh", mandi: "Ujjain" },
-  { name: "Sugarcane", emoji: "🎋", grade: "Co-0238", price: 340, change: 0.4, spark: [33, 33, 34, 34, 34, 34, 34], state: "Uttar Pradesh", mandi: "Muzaffarnagar" },
-  { name: "Groundnut", emoji: "🥜", grade: "Bold", price: 6320, change: 1.8, spark: [60, 61, 62, 61, 62, 63, 63], state: "Gujarat", mandi: "Junagadh" },
-  { name: "Chilli", emoji: "🌶️", grade: "Teja S17", price: 18500, change: 4.3, spark: [170, 172, 175, 178, 181, 183, 185], state: "Andhra Pradesh", mandi: "Guntur" },
-  { name: "Turmeric", emoji: "🟡", grade: "Finger", price: 14200, change: -1.1, spark: [145, 144, 143, 142, 142, 141, 142], state: "Tamil Nadu", mandi: "Erode" },
-];
-
-const STATES = ["All", ...Array.from(new Set(SEED.map((c) => c.state))).sort()];
 type SortKey = "name" | "price" | "change";
 
 function MarketPage() {
   const { t } = useI18n();
+  const loadMarket = useServerFn(getMarketPrices);
   const [query, setQuery] = useState("");
   const [state, setState] = useState("All");
   const [sort, setSort] = useState<SortKey>("change");
   const [nonce, setNonce] = useState(0);
-  const updatedAt = useMemo(() => new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }), [nonce]);
+  const [crops, setCrops] = useState<MarketCrop[]>([]);
+  const [states, setStates] = useState(["All"]);
+  const [updatedAt, setUpdatedAt] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const crops = useMemo(() => {
-    // Apply a deterministic per-refresh jitter to simulate a live tick.
-    const jittered = SEED.map((c, i) => {
-      const seed = (nonce * 7 + i * 11) % 17;
-      const delta = (seed - 8) / 100; // -8% .. +8%
-      const price = Math.max(50, Math.round(c.price * (1 + delta * 0.02)));
-      const change = +(c.change + delta).toFixed(2);
-      return { ...c, price, change };
-    });
-    const filtered = jittered.filter((c) => {
-      const q = query.trim().toLowerCase();
-      const matchQ = !q || c.name.toLowerCase().includes(q) || c.mandi.toLowerCase().includes(q) || c.grade.toLowerCase().includes(q);
-      const matchS = state === "All" || c.state === state;
-      return matchQ && matchS;
-    });
-    return filtered.sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "price") return b.price - a.price;
-      return b.change - a.change;
-    });
-  }, [query, state, sort, nonce]);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    loadMarket({ data: { query, state, sort, nonce } })
+      .then((res) => {
+        if (cancelled) return;
+        setCrops(res.crops);
+        setStates(res.states);
+        setUpdatedAt(res.updatedAt);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadMarket, query, state, sort, nonce]);
 
   return (
     <>
