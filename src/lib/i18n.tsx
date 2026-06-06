@@ -14,8 +14,8 @@ const STRINGS: Record<Lang, Dict> = {
     "nav.schemes": "Schemes",
     "nav.signin": "Sign In",
     "hero.badge": "Intelligent Agriculture 2.0",
-    "hero.title1": "Smart AI Farming",
-    "hero.title2": "Assistant",
+    "hero.title": "AgriAI Assist",
+    "hero.titleAccent": "Smart Farmer Advisory",
     "hero.sub": "Optimize yields, diagnose diseases, and track real-time weather with your pocket-sized agronomist.",
     "cta.ask.title": "Ask AgriAI",
     "cta.ask.body": "Get instant answers about fertilizers, pests, and soil health.",
@@ -39,8 +39,8 @@ const STRINGS: Record<Lang, Dict> = {
     "nav.schemes": "योजनाएँ",
     "nav.signin": "साइन इन",
     "hero.badge": "बुद्धिमान कृषि 2.0",
-    "hero.title1": "स्मार्ट एआई खेती",
-    "hero.title2": "सहायक",
+    "hero.title": "एग्रीएआई असिस्ट",
+    "hero.titleAccent": "स्मार्ट किसान सलाह",
     "hero.sub": "उपज बढ़ाएँ, रोग पहचानें और रीयल-टाइम मौसम ट्रैक करें — आपके जेब में कृषि विशेषज्ञ।",
     "cta.ask.title": "एग्रीएआई से पूछें",
     "cta.ask.body": "उर्वरक, कीट और मिट्टी पर तुरंत उत्तर पाएँ।",
@@ -64,8 +64,8 @@ const STRINGS: Record<Lang, Dict> = {
     "nav.schemes": "திட்டங்கள்",
     "nav.signin": "உள்நுழைய",
     "hero.badge": "புத்திசாலி விவசாயம் 2.0",
-    "hero.title1": "ஸ்மார்ட் AI விவசாய",
-    "hero.title2": "உதவியாளர்",
+    "hero.title": "AgriAI Assist",
+    "hero.titleAccent": "ஸ்மார்ட் விவசாய ஆலோசனை",
     "hero.sub": "மகசூலை அதிகரிக்கவும், நோய்களைக் கண்டறியவும், நேரடி வானிலையை கண்காணிக்கவும்.",
     "cta.ask.title": "AgriAI-ஐக் கேளுங்கள்",
     "cta.ask.body": "உரம், பூச்சி, மண் பற்றிய உடனடி பதில்கள்.",
@@ -89,8 +89,8 @@ const STRINGS: Record<Lang, Dict> = {
     "nav.schemes": "పథకాలు",
     "nav.signin": "సైన్ ఇన్",
     "hero.badge": "తెలివైన వ్యవసాయం 2.0",
-    "hero.title1": "స్మార్ట్ AI వ్యవసాయ",
-    "hero.title2": "సహాయకుడు",
+    "hero.title": "AgriAI Assist",
+    "hero.titleAccent": "స్మార్ట్ రైతు సలహా",
     "hero.sub": "దిగుబడిని పెంచండి, వ్యాధులను గుర్తించండి, రియల్-టైమ్ వాతావరణాన్ని ట్రాక్ చేయండి.",
     "cta.ask.title": "AgriAI ని అడగండి",
     "cta.ask.body": "ఎరువులు, పురుగులు, నేలపై తక్షణ సమాధానాలు.",
@@ -114,8 +114,8 @@ const STRINGS: Record<Lang, Dict> = {
     "nav.schemes": "പദ്ധതികൾ",
     "nav.signin": "സൈൻ ഇൻ",
     "hero.badge": "ബുദ്ധിമാൻ കൃഷി 2.0",
-    "hero.title1": "സ്മാർട്ട് AI കൃഷി",
-    "hero.title2": "സഹായി",
+    "hero.title": "AgriAI Assist",
+    "hero.titleAccent": "സ്മാർട്ട് കർഷക ഉപദേശം",
     "hero.sub": "വിളവ് വർദ്ധിപ്പിക്കുക, രോഗങ്ങൾ കണ്ടെത്തുക, തത്സമയ കാലാവസ്ഥ ട്രാക്ക് ചെയ്യുക.",
     "cta.ask.title": "AgriAI യോട് ചോദിക്കുക",
     "cta.ask.body": "വളം, കീടം, മണ്ണിനെ കുറിച്ച് ഉടനടി മറുപടി.",
@@ -134,7 +134,7 @@ const STRINGS: Record<Lang, Dict> = {
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };
-const I18nCtx = createContext<Ctx>({ lang: "EN", setLang: () => {}, t: (k) => k });
+const I18nCtx = createContext<Ctx>({ lang: "EN", setLang: () => {}, t: (k) => STRINGS.EN[k] ?? k });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("EN");
