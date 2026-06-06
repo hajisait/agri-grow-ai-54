@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Search, ExternalLink } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { useI18n } from "@/lib/i18n";
+import { getSchemes, type Scheme } from "@/lib/agri-data.functions";
 
 export const Route = createFileRoute("/schemes")({
   head: () => ({
@@ -18,100 +20,31 @@ export const Route = createFileRoute("/schemes")({
 });
 
 type Tone = "primary" | "sky" | "amber";
-type Scheme = {
-  tag: string; tone: Tone;
-  title: string; body: string;
-  eligibility: string; benefits: string;
-  url: string;
-};
-
-const SCHEMES: Scheme[] = [
-  {
-    tag: "Direct Benefit", tone: "primary", title: "PM-KISAN Nidhi",
-    body: "Income support of ₹6,000 per year for all landholding farmers' families, paid in three equal installments.",
-    eligibility: "All landholding farmer families (with valid land records).",
-    benefits: "₹2,000 every 4 months directly to bank account.",
-    url: "https://pmkisan.gov.in/",
-  },
-  {
-    tag: "Crop Insurance", tone: "sky", title: "Pradhan Mantri Fasal Bima Yojana",
-    body: "Comprehensive crop insurance against natural calamities, pests and diseases.",
-    eligibility: "All farmers growing notified crops in notified areas.",
-    benefits: "Low premium (1.5%–5%), full sum insured on loss.",
-    url: "https://pmfby.gov.in/",
-  },
-  {
-    tag: "Credit", tone: "amber", title: "Kisan Credit Card (KCC)",
-    body: "Short-term credit at subsidized interest rates for cultivation, post-harvest and consumption needs.",
-    eligibility: "All farmers, tenants, sharecroppers and SHGs.",
-    benefits: "Loans up to ₹3 lakh at 4% effective interest.",
-    url: "https://www.myscheme.gov.in/schemes/kcc",
-  },
-  {
-    tag: "Modernization", tone: "primary", title: "Sub-Mission on Agricultural Mechanization",
-    body: "Subsidies on tractors, harvesters, and modern farm machinery for individual farmers and FPOs.",
-    eligibility: "Individual farmers and Farmer Producer Organisations.",
-    benefits: "40%–80% subsidy on eligible equipment.",
-    url: "https://agrimachinery.nic.in/",
-  },
-  {
-    tag: "Irrigation", tone: "sky", title: "PM Krishi Sinchayee Yojana",
-    body: "Micro-irrigation and water-conservation infrastructure to ensure 'Har Khet Ko Pani'.",
-    eligibility: "All farmers with usable land.",
-    benefits: "Up to 55% subsidy for small/marginal farmers.",
-    url: "https://pmksy.gov.in/",
-  },
-  {
-    tag: "Aerial", tone: "amber", title: "Drone Subsidy Scheme",
-    body: "Financial assistance for purchase of agri-drones for spraying and crop monitoring.",
-    eligibility: "FPOs, custom hiring centres, agri-graduates.",
-    benefits: "Up to 75% subsidy (max ₹10 lakh).",
-    url: "https://agriwelfare.gov.in/en/Major",
-  },
-  {
-    tag: "Soil Health", tone: "primary", title: "Soil Health Card Scheme",
-    body: "Free soil testing and customized nutrient recommendations for every farm holding.",
-    eligibility: "All farmers across India.",
-    benefits: "Free soil card with 12 parameters every 3 years.",
-    url: "https://soilhealth.dac.gov.in/",
-  },
-  {
-    tag: "Organic", tone: "sky", title: "Paramparagat Krishi Vikas Yojana",
-    body: "Cluster-based promotion of organic farming with certification and marketing support.",
-    eligibility: "Farmer groups of 20+ in a 20-hectare cluster.",
-    benefits: "₹50,000 per hectare over 3 years.",
-    url: "https://pgsindia-ncof.gov.in/pkvy/index.aspx",
-  },
-  {
-    tag: "Marketing", tone: "amber", title: "e-NAM",
-    body: "Pan-India electronic trading portal that networks agricultural mandis for unified national market.",
-    eligibility: "Registered farmers and traders.",
-    benefits: "Better price discovery, transparent auctions.",
-    url: "https://www.enam.gov.in/",
-  },
-];
-
 const TONE: Record<Tone, { border: string; text: string; bg: string }> = {
   primary: { border: "border-l-primary", text: "text-primary", bg: "bg-primary/10 hover:bg-primary/15" },
   sky: { border: "border-l-[color:var(--sky-brand)]", text: "text-[color:var(--sky-brand)]", bg: "bg-[color:var(--sky-brand)]/10 hover:bg-[color:var(--sky-brand)]/15" },
   amber: { border: "border-l-[color:var(--amber-brand)]", text: "text-[color:var(--amber-brand)]", bg: "bg-[color:var(--amber-brand)]/15 hover:bg-[color:var(--amber-brand)]/25" },
 };
 
-const CATEGORIES = ["All", ...Array.from(new Set(SCHEMES.map((s) => s.tag)))];
-
 function SchemesPage() {
   const { t } = useI18n();
+  const loadSchemes = useServerFn(getSchemes);
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
+  const [list, setList] = useState<Scheme[]>([]);
+  const [categories, setCategories] = useState(["All"]);
 
-  const list = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return SCHEMES.filter((s) => {
-      const matchQ = !q || s.title.toLowerCase().includes(q) || s.body.toLowerCase().includes(q) || s.tag.toLowerCase().includes(q);
-      const matchC = cat === "All" || s.tag === cat;
-      return matchQ && matchC;
+  useEffect(() => {
+    let cancelled = false;
+    loadSchemes({ data: { query, category: cat } }).then((res) => {
+      if (cancelled) return;
+      setList(res.schemes);
+      setCategories(res.categories);
     });
-  }, [query, cat]);
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSchemes, query, cat]);
 
   return (
     <>
@@ -133,7 +66,7 @@ function SchemesPage() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto md:flex-wrap">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCat(c)}

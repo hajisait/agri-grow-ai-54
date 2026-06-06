@@ -75,7 +75,7 @@ function MarketPage() {
             onChange={(e) => setState(e.target.value)}
             className="bg-white/70 border border-white/80 rounded-full px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary/50"
           >
-            {STATES.map((s) => <option key={s} value={s}>{s === "All" ? "All States" : s}</option>)}
+            {states.map((s) => <option key={s} value={s}>{s === "All" ? "All States" : s}</option>)}
           </select>
           <select
             value={sort}
