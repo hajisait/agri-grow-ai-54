@@ -125,8 +125,8 @@ function WeatherPage() {
       <Nav />
       <main className="max-w-6xl mx-auto px-4 md:px-6 pt-10 pb-16">
         <div className="text-center mb-8 animate-fade-up">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">Live Weather</h1>
-          <p className="text-foreground/60 mt-2">Search any village or city worldwide</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">{t("page.weather.title")}</h1>
+          <p className="text-foreground/60 mt-2">{t("page.weather.subtitle")}</p>
         </div>
 
         <form onSubmit={search} className="max-w-xl mx-auto flex flex-wrap gap-2 mb-8">
