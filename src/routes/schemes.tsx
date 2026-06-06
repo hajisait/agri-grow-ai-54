@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Search, ExternalLink } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/schemes")({
   head: () => ({
@@ -99,6 +100,7 @@ const TONE: Record<Tone, { border: string; text: string; bg: string }> = {
 const CATEGORIES = ["All", ...Array.from(new Set(SCHEMES.map((s) => s.tag)))];
 
 function SchemesPage() {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
 
@@ -116,8 +118,8 @@ function SchemesPage() {
       <Nav />
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-16">
         <div className="text-center mb-8 animate-fade-up">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">Government Support</h1>
-          <p className="text-foreground/60 mt-2">Schemes, subsidies and insurance designed for Indian farmers.</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">{t("page.schemes.title")}</h1>
+          <p className="text-foreground/60 mt-2">{t("page.schemes.subtitle")}</p>
         </div>
 
         <div className="glass-panel rounded-3xl p-4 md:p-5 mb-6 flex flex-col md:flex-row gap-3">

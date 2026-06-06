@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Search, TrendingDown, TrendingUp, ArrowUpDown, ExternalLink, RefreshCw } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
@@ -40,6 +41,7 @@ const STATES = ["All", ...Array.from(new Set(SEED.map((c) => c.state))).sort()];
 type SortKey = "name" | "price" | "change";
 
 function MarketPage() {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [state, setState] = useState("All");
   const [sort, setSort] = useState<SortKey>("change");
@@ -73,8 +75,8 @@ function MarketPage() {
       <Nav />
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-16">
         <div className="text-center mb-8 animate-fade-up">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">Market Prices</h1>
-          <p className="text-foreground/60 mt-2">Live mandi feeds across India · Updated {updatedAt}</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">{t("page.market.title")}</h1>
+          <p className="text-foreground/60 mt-2">{t("page.market.subtitle")} · Updated {updatedAt}</p>
         </div>
 
         <div className="glass-panel rounded-3xl p-4 md:p-5 mb-6 flex flex-col md:flex-row gap-3 md:items-center">
