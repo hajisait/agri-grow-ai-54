@@ -18,6 +18,7 @@ export const geocodePlace = createServerFn({ method: "GET" })
     const r = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(data.query)}&count=1&language=en&format=json`,
     );
+    if (!r.ok) return { place: null };
     const j = (await r.json()) as { results?: GeoResult[] };
     return { place: j.results?.[0] ?? null };
   });
@@ -31,6 +32,7 @@ export const reverseGeocode = createServerFn({ method: "GET" })
     const r = await fetch(
       `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${data.latitude}&longitude=${data.longitude}&language=en&format=json`,
     ).catch(() => null);
+    if (r && !r.ok) return { place: null };
     const j = r ? ((await r.json()) as { results?: GeoResult[] }) : { results: [] };
     return { place: j.results?.[0] ?? null };
   });
