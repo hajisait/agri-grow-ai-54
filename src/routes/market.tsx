@@ -70,22 +70,24 @@ function MarketPage() {
               className="w-full bg-white/70 border border-white/80 rounded-full pl-11 pr-5 py-2.5 text-sm outline-none focus:border-primary/50 focus:bg-white"
             />
           </div>
-          <select
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            className="bg-white/70 border border-white/80 rounded-full px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary/50"
-          >
-            {states.map((s) => <option key={s} value={s}>{s === "All" ? "All States" : s}</option>)}
-          </select>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="bg-white/70 border border-white/80 rounded-full px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary/50"
-          >
-            <option value="change">Top Movers</option>
-            <option value="price">Highest Price</option>
-            <option value="name">Name (A–Z)</option>
-          </select>
+          <div className="flex gap-2 overflow-x-auto md:max-w-xs">
+            {states.map((s) => (
+              <button key={s} type="button" onClick={() => setState(s)} className={`shrink-0 rounded-full px-3.5 py-2.5 text-xs font-bold border transition ${state === s ? "bg-primary text-primary-foreground border-primary" : "bg-white/70 border-white/80 text-foreground/70 hover:bg-white"}`}>
+                {s === "All" ? "All States" : s}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {([
+              ["change", "Top Movers"],
+              ["price", "Highest"],
+              ["name", "A–Z"],
+            ] as const).map(([key, label]) => (
+              <button key={key} type="button" onClick={() => setSort(key)} className={`rounded-full px-3.5 py-2.5 text-xs font-bold border transition ${sort === key ? "bg-primary text-primary-foreground border-primary" : "bg-white/70 border-white/80 text-foreground/70 hover:bg-white"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setNonce((n) => n + 1)}
             className="bg-primary text-primary-foreground rounded-full px-4 py-2.5 text-sm font-bold flex items-center gap-2 shadow-[var(--shadow-glow-primary)] hover:scale-[1.02] transition"

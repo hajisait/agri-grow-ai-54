@@ -85,9 +85,13 @@ function DiseasePage() {
             <div className="mt-4 space-y-3">
               <div>
                 <label className="text-[11px] uppercase font-bold tracking-widest text-foreground/50">Crop</label>
-                <select value={crop} onChange={(e) => setCrop(e.target.value)} className="w-full mt-1 bg-white/70 border border-white/80 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary/50">
-                  {["Rice", "Wheat", "Tomato", "Cotton", "Onion", "Potato", "Maize", "Sugarcane"].map((c) => <option key={c}>{c}</option>)}
-                </select>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["Rice", "Wheat", "Tomato", "Cotton", "Onion", "Potato", "Maize", "Sugarcane"].map((c) => (
+                    <button key={c} type="button" onClick={() => setCrop(c)} className={`rounded-full px-3 py-1.5 text-xs font-bold border transition ${crop === c ? "bg-primary text-primary-foreground border-primary" : "bg-white/70 border-white/80 text-foreground/70 hover:bg-white"}`}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="text-[11px] uppercase font-bold tracking-widest text-foreground/50">Symptoms (optional)</label>
