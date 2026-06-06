@@ -45,13 +45,24 @@ function WeatherPage() {
     setPlace(p);
     try {
       localStorage.setItem("agriai_place", JSON.stringify(p));
+      window.dispatchEvent(new CustomEvent("agriai:place-changed", { detail: p }));
     } catch {}
-    const wx = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`,
-    ).then((r) => r.json());
+    const wx = await fetchWeather({ data: { latitude: p.latitude, longitude: p.longitude } });
     setCurrent(wx.current);
     setDaily(wx.daily);
   }
+
+  useEffect(() => {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("agriai_place") : null;
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw) as Place;
+        void loadWeather(saved);
+        return;
+      } catch {}
+    }
+    void loadWeather(DEFAULT_PLACE);
+  }, []);
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
@@ -59,10 +70,8 @@ function WeatherPage() {
     setLoading(true);
     setError(null);
     try {
-      const geo = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`,
-      ).then((r) => r.json());
-      const first = geo.results?.[0];
+      const geo = await geocode({ data: { query } });
+      const first = geo.place;
       if (!first) {
         setError("Location not found. Try another village or city.");
         setLoading(false);
@@ -90,10 +99,8 @@ function WeatherPage() {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          const rev = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&language=en&format=json`,
-          ).then((r) => r.json()).catch(() => ({ results: [] }));
-          const first = rev.results?.[0];
+          const rev = await reverse({ data: { latitude, longitude } });
+          const first = rev.place;
           await loadWeather({
             name: first?.name ?? "My location",
             country: first?.country ?? "",
