@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CloudSun, Wind, MapPin } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { getWeather, reverseGeocode } from "@/lib/weather.functions";
+import { getWeather, reverseGeocode, type WeatherData } from "@/lib/weather.functions";
 import { useI18n } from "@/lib/i18n";
 
 type Saved = { name: string; admin1?: string; country?: string; latitude: number; longitude: number };
@@ -13,7 +13,7 @@ export function WeatherWidget() {
   const fetchWx = useServerFn(getWeather);
   const reverse = useServerFn(reverseGeocode);
   const [place, setPlace] = useState<Saved | null>(null);
-  const [wx, setWx] = useState<Awaited<ReturnType<typeof getWeather>> | null>(null);
+  const [wx, setWx] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
