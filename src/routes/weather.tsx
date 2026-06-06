@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Search, CloudSun, Droplets, Wind, Thermometer, MapPin, LocateFixed } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
+import { geocodePlace, getWeather, reverseGeocode, type WeatherData } from "@/lib/weather.functions";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/weather")({
   head: () => ({
@@ -16,21 +19,8 @@ export const Route = createFileRoute("/weather")({
   component: WeatherPage,
 });
 
-type Current = {
-  temperature_2m: number;
-  relative_humidity_2m: number;
-  wind_speed_10m: number;
-  weather_code: number;
-  apparent_temperature: number;
-};
-type Daily = {
-  time: string[];
-  temperature_2m_max: number[];
-  temperature_2m_min: number[];
-  precipitation_probability_max: number[];
-  weather_code: number[];
-};
 type Place = { name: string; country: string; admin1?: string; latitude: number; longitude: number };
+const DEFAULT_PLACE: Place = { name: "New Delhi", admin1: "Delhi", country: "India", latitude: 28.6139, longitude: 77.209 };
 
 const WMO: Record<number, string> = {
   0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
@@ -40,10 +30,14 @@ const WMO: Record<number, string> = {
 };
 
 function WeatherPage() {
+  const { t } = useI18n();
+  const geocode = useServerFn(geocodePlace);
+  const fetchWeather = useServerFn(getWeather);
+  const reverse = useServerFn(reverseGeocode);
   const [query, setQuery] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
-  const [current, setCurrent] = useState<Current | null>(null);
-  const [daily, setDaily] = useState<Daily | null>(null);
+  const [current, setCurrent] = useState<WeatherData["current"] | null>(null);
+  const [daily, setDaily] = useState<WeatherData["daily"] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
