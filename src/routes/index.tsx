@@ -43,8 +43,8 @@ function Landing() {
               {t("hero.badge")}
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter text-balance leading-[0.92]">
-              {t("hero.title1")}{" "}
-              <span className="text-[color:var(--sky-brand)]">{t("hero.title2")}</span>
+              <span className="block">{t("hero.title")}</span>
+              <span className="block text-[color:var(--sky-brand)] mt-2">{t("hero.titleAccent")}</span>
             </h1>
             <p className="max-w-xl mx-auto text-base md:text-lg text-foreground/70 text-pretty font-medium">
               {t("hero.sub")}

@@ -8,6 +8,23 @@ type GeoResult = {
   longitude: number;
 };
 
+export type WeatherData = {
+  current: {
+    temperature_2m: number;
+    relative_humidity_2m: number;
+    wind_speed_10m: number;
+    weather_code: number;
+    apparent_temperature: number;
+  };
+  daily: {
+    time: string[];
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+    precipitation_probability_max: number[];
+    weather_code: number[];
+  };
+};
+
 export const geocodePlace = createServerFn({ method: "GET" })
   .inputValidator((data: { query: string }) => {
     const q = String(data?.query ?? "").trim().slice(0, 80);
@@ -18,6 +35,7 @@ export const geocodePlace = createServerFn({ method: "GET" })
     const r = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(data.query)}&count=1&language=en&format=json`,
     );
+    if (!r.ok) return { place: null };
     const j = (await r.json()) as { results?: GeoResult[] };
     return { place: j.results?.[0] ?? null };
   });
@@ -31,6 +49,7 @@ export const reverseGeocode = createServerFn({ method: "GET" })
     const r = await fetch(
       `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${data.latitude}&longitude=${data.longitude}&language=en&format=json`,
     ).catch(() => null);
+    if (r && !r.ok) return { place: null };
     const j = r ? ((await r.json()) as { results?: GeoResult[] }) : { results: [] };
     return { place: j.results?.[0] ?? null };
   });
@@ -48,20 +67,5 @@ export const getWeather = createServerFn({ method: "GET" })
       `https://api.open-meteo.com/v1/forecast?latitude=${data.latitude}&longitude=${data.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`,
     );
     if (!r.ok) throw new Error("Weather provider error");
-    return (await r.json()) as {
-      current: {
-        temperature_2m: number;
-        relative_humidity_2m: number;
-        wind_speed_10m: number;
-        weather_code: number;
-        apparent_temperature: number;
-      };
-      daily: {
-        time: string[];
-        temperature_2m_max: number[];
-        temperature_2m_min: number[];
-        precipitation_probability_max: number[];
-        weather_code: number[];
-      };
-    };
+    return (await r.json()) as WeatherData;
   });

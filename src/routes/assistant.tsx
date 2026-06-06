@@ -5,6 +5,7 @@ import { Mic, Send, Sparkles } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { askAgriAI } from "@/lib/chat.functions";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/assistant")({
   head: () => ({
@@ -28,6 +29,7 @@ const SUGGESTIONS = [
 ];
 
 function AssistantPage() {
+  const { t, lang } = useI18n();
   const ask = useServerFn(askAgriAI);
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: "Hi! I'm AgriAI 🌱 — your farming co-pilot. Ask me anything about crops, soil, weather, pests, or schemes." },
@@ -50,7 +52,7 @@ function AssistantPage() {
     setInput("");
     setLoading(true);
     try {
-      const res = await ask({ data: { messages: next.map((m) => ({ role: m.role, content: m.content })) } });
+      const res = await ask({ data: { messages: next.map((m) => ({ role: m.role, content: m.content })), language: lang } });
       setMessages([...next, { role: "assistant", content: res.reply }]);
     } catch {
       setMessages([...next, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]);
@@ -93,10 +95,10 @@ function AssistantPage() {
       <main className="max-w-4xl mx-auto px-4 md:px-6 pt-10 pb-16">
         <div className="text-center mb-6 animate-fade-up">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 border border-white/80 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            <Sparkles className="size-3" /> AI Assistant
+            <Sparkles className="size-3" /> {t("nav.assistant")}
           </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter mt-3">Ask AgriAI Anything</h1>
-          <p className="text-foreground/60 mt-2">Powered by Lovable AI · Replies in your language</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter mt-3">{t("page.assistant.title")}</h1>
+          <p className="text-foreground/60 mt-2">{t("page.assistant.subtitle")}</p>
         </div>
 
         <div className="glass-panel rounded-[2rem] p-4 md:p-6 flex flex-col h-[60vh] min-h-[480px]">

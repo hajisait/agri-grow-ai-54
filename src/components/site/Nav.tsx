@@ -23,7 +23,7 @@ export function Nav() {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-1.5 glass-panel rounded-full px-3 py-1.5 text-[11px] font-semibold">
+        <div className="flex items-center gap-1 glass-panel rounded-full px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-[11px] font-semibold">
           {LANGS.map((l, i) => (
             <span key={l} className="flex items-center gap-1.5">
               <button

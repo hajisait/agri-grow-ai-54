@@ -2,23 +2,25 @@ import { useEffect, useState } from "react";
 import { CloudSun, Wind, MapPin } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { getWeather, reverseGeocode } from "@/lib/weather.functions";
+import { getWeather, reverseGeocode, type WeatherData } from "@/lib/weather.functions";
 import { useI18n } from "@/lib/i18n";
 
 type Saved = { name: string; admin1?: string; country?: string; latitude: number; longitude: number };
+const DEFAULT_PLACE: Saved = { name: "New Delhi", admin1: "Delhi", country: "India", latitude: 28.6139, longitude: 77.209 };
 
 export function WeatherWidget() {
   const { t } = useI18n();
   const fetchWx = useServerFn(getWeather);
   const reverse = useServerFn(reverseGeocode);
   const [place, setPlace] = useState<Saved | null>(null);
-  const [wx, setWx] = useState<Awaited<ReturnType<typeof getWeather>> | null>(null);
+  const [wx, setWx] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load(p: Saved) {
+      setLoading(true);
       try {
         const data = await fetchWx({ data: { latitude: p.latitude, longitude: p.longitude } });
         if (!cancelled) {
@@ -32,12 +34,25 @@ export function WeatherWidget() {
       }
     }
 
-    const raw = typeof window !== "undefined" ? localStorage.getItem("agriai_place") : null;
-    if (raw) {
-      try {
-        load(JSON.parse(raw) as Saved);
-        return;
-      } catch {}
+    function loadSavedOrDefault() {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("agriai_place") : null;
+      if (raw) {
+        try {
+          void load(JSON.parse(raw) as Saved);
+          return true;
+        } catch {}
+      }
+      return false;
+    }
+
+    const onPlaceChanged = () => loadSavedOrDefault();
+    window.addEventListener("agriai:place-changed", onPlaceChanged);
+
+    if (loadSavedOrDefault()) {
+      return () => {
+        cancelled = true;
+        window.removeEventListener("agriai:place-changed", onPlaceChanged);
+      };
     }
 
     if (typeof navigator !== "undefined" && navigator.geolocation) {
@@ -62,16 +77,17 @@ export function WeatherWidget() {
           }
         },
         () => {
-          if (!cancelled) setLoading(false);
+          void load(DEFAULT_PLACE);
         },
         { timeout: 8000 },
       );
     } else {
-      setLoading(false);
+      void load(DEFAULT_PLACE);
     }
 
     return () => {
       cancelled = true;
+      window.removeEventListener("agriai:place-changed", onPlaceChanged);
     };
   }, [fetchWx, reverse]);
 

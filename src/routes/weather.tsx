@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Search, CloudSun, Droplets, Wind, Thermometer, MapPin, LocateFixed } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
+import { geocodePlace, getWeather, reverseGeocode, type WeatherData } from "@/lib/weather.functions";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/weather")({
   head: () => ({
@@ -16,21 +19,8 @@ export const Route = createFileRoute("/weather")({
   component: WeatherPage,
 });
 
-type Current = {
-  temperature_2m: number;
-  relative_humidity_2m: number;
-  wind_speed_10m: number;
-  weather_code: number;
-  apparent_temperature: number;
-};
-type Daily = {
-  time: string[];
-  temperature_2m_max: number[];
-  temperature_2m_min: number[];
-  precipitation_probability_max: number[];
-  weather_code: number[];
-};
 type Place = { name: string; country: string; admin1?: string; latitude: number; longitude: number };
+const DEFAULT_PLACE: Place = { name: "New Delhi", admin1: "Delhi", country: "India", latitude: 28.6139, longitude: 77.209 };
 
 const WMO: Record<number, string> = {
   0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
@@ -40,10 +30,14 @@ const WMO: Record<number, string> = {
 };
 
 function WeatherPage() {
+  const { t } = useI18n();
+  const geocode = useServerFn(geocodePlace);
+  const fetchWeather = useServerFn(getWeather);
+  const reverse = useServerFn(reverseGeocode);
   const [query, setQuery] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
-  const [current, setCurrent] = useState<Current | null>(null);
-  const [daily, setDaily] = useState<Daily | null>(null);
+  const [current, setCurrent] = useState<WeatherData["current"] | null>(null);
+  const [daily, setDaily] = useState<WeatherData["daily"] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,13 +45,24 @@ function WeatherPage() {
     setPlace(p);
     try {
       localStorage.setItem("agriai_place", JSON.stringify(p));
+      window.dispatchEvent(new CustomEvent("agriai:place-changed", { detail: p }));
     } catch {}
-    const wx = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`,
-    ).then((r) => r.json());
+    const wx = await fetchWeather({ data: { latitude: p.latitude, longitude: p.longitude } });
     setCurrent(wx.current);
     setDaily(wx.daily);
   }
+
+  useEffect(() => {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("agriai_place") : null;
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw) as Place;
+        void loadWeather(saved);
+        return;
+      } catch {}
+    }
+    void loadWeather(DEFAULT_PLACE);
+  }, []);
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
@@ -65,10 +70,8 @@ function WeatherPage() {
     setLoading(true);
     setError(null);
     try {
-      const geo = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`,
-      ).then((r) => r.json());
-      const first = geo.results?.[0];
+      const geo = await geocode({ data: { query } });
+      const first = geo.place;
       if (!first) {
         setError("Location not found. Try another village or city.");
         setLoading(false);
@@ -96,10 +99,8 @@ function WeatherPage() {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          const rev = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&language=en&format=json`,
-          ).then((r) => r.json()).catch(() => ({ results: [] }));
-          const first = rev.results?.[0];
+          const rev = await reverse({ data: { latitude, longitude } });
+          const first = rev.place;
           await loadWeather({
             name: first?.name ?? "My location",
             country: first?.country ?? "",
@@ -124,8 +125,8 @@ function WeatherPage() {
       <Nav />
       <main className="max-w-6xl mx-auto px-4 md:px-6 pt-10 pb-16">
         <div className="text-center mb-8 animate-fade-up">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">Live Weather</h1>
-          <p className="text-foreground/60 mt-2">Search any village or city worldwide</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">{t("page.weather.title")}</h1>
+          <p className="text-foreground/60 mt-2">{t("page.weather.subtitle")}</p>
         </div>
 
         <form onSubmit={search} className="max-w-xl mx-auto flex flex-wrap gap-2 mb-8">
