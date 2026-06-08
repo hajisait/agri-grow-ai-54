@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { WeatherWidget } from "@/components/site/WeatherWidget";
@@ -168,7 +168,7 @@ function Landing() {
 
 function CTACard({
   to, icon, tint, title, body,
-}: { to: string; icon: React.ReactNode; tint: string; title: string; body: string }) {
+}: { to: string; icon: ReactNode; tint: string; title: string; body: string }) {
   return (
     <Link to={to} className="group glass-panel p-6 rounded-[2rem] hover:bg-white/65 transition-all cursor-pointer ring-1 ring-foreground/5">
       <div className={`size-12 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${tint}`}>
@@ -180,10 +180,76 @@ function CTACard({
   );
 }
 
+const fallbackCrops: MarketCrop[] = [
+  { name: "Basmati Rice", emoji: "🌾", grade: "Grade A Premium", price: 4200, change: 2.4, spark: [], state: "Punjab", mandi: "Karnal" },
+  { name: "Tomato", emoji: "🍅", grade: "Hybrid F1", price: 1840, change: 5.1, spark: [], state: "Maharashtra", mandi: "Nashik" },
+  { name: "Yellow Maize", emoji: "🌽", grade: "Common Grade", price: 2150, change: -0.8, spark: [], state: "Karnataka", mandi: "Davangere" },
+];
+
+function DashboardMarket() {
+  const loadMarket = useServerFn(getMarketPrices);
+  const [nonce, setNonce] = useState(0);
+  const [crops, setCrops] = useState<MarketCrop[]>(fallbackCrops);
+  const [updatedAt, setUpdatedAt] = useState("Live");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadMarket({ data: { query: "", state: "All", sort: "change", nonce } })
+      .then((res) => {
+        if (cancelled) return;
+        setCrops(res.crops.slice(0, 3));
+        setUpdatedAt(res.updatedAt);
+      })
+      .catch(() => {
+        if (!cancelled) setCrops(fallbackCrops);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadMarket, nonce]);
+
+  return (
+    <div className="md:col-span-8 glass-panel p-6 md:p-8 rounded-[2rem]">
+      <div className="flex flex-wrap justify-between items-end gap-3 mb-6">
+        <div>
+          <h3 className="text-2xl font-bold tracking-tight">Live Market Prices</h3>
+          <p className="text-sm text-foreground/60">Backend mandi feed · updated {updatedAt}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setNonce((n) => n + 1)}
+            className="size-10 rounded-full bg-white/80 border border-foreground/5 text-primary grid place-items-center hover:bg-white"
+            aria-label="Refresh market prices"
+          >
+            <RefreshCw className="size-4" />
+          </button>
+          <Link to="/market" className="text-sm font-bold text-primary px-4 py-2 bg-white/80 rounded-full border border-foreground/5 hover:bg-white">
+            View All Crops
+          </Link>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {crops.map((crop) => (
+          <PriceRow
+            key={`${crop.name}-${crop.mandi}`}
+            icon={crop.emoji === "🌾" ? <Wheat className="size-5 text-amber-700" /> : crop.emoji}
+            name={crop.name}
+            grade={`${crop.grade} · ${crop.mandi}`}
+            price={`₹${crop.price.toLocaleString("en-IN")}`}
+            change={`${crop.change >= 0 ? "+" : ""}${crop.change}%`}
+            up={crop.change >= 0}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 function PriceRow({
   icon, name, grade, price, change, up,
-}: { icon: React.ReactNode; name: string; grade: string; price: string; change: string; up?: boolean }) {
+}: { icon: ReactNode; name: string; grade: string; price: string; change: string; up?: boolean }) {
   return (
     <div className="flex items-center justify-between p-4 bg-white/45 rounded-2xl border border-white/60 hover:border-primary/30 transition-colors">
       <div className="flex items-center gap-4">
