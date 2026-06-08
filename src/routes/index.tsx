@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { WeatherWidget } from "@/components/site/WeatherWidget";
 import { useI18n } from "@/lib/i18n";
-import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp } from "lucide-react";
+import { getMarketPrices, getSchemes, type MarketCrop, type Scheme } from "@/lib/agri-data.functions";
+import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp, ExternalLink, RefreshCw } from "lucide-react";
 import heroField from "@/assets/hero-field.jpg";
 import cropLeaf from "@/assets/crop-leaf.jpg";
 
@@ -152,37 +155,11 @@ function Landing() {
               <p className="text-sm text-foreground/60">Upload crop leaf photos for instant analysis and treatment plans.</p>
             </Link>
 
-            {/* Market */}
-            <div className="md:col-span-8 glass-panel p-6 md:p-8 rounded-[2rem]">
-              <div className="flex justify-between items-end mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold tracking-tight">Market Prices</h3>
-                  <p className="text-sm text-foreground/60">Daily updates from local Mandis</p>
-                </div>
-                <Link to="/market" className="text-sm font-bold text-primary px-4 py-2 bg-white/80 rounded-full border border-foreground/5 hover:bg-white">
-                  View All Crops
-                </Link>
-              </div>
-              <div className="space-y-3">
-                <PriceRow icon={<Wheat className="size-5 text-amber-700" />} name="Basmati Rice" grade="Grade A Premium" price="₹4,200" change="+2.4%" up />
-                <PriceRow icon="🌽" name="Yellow Maize" grade="Common Grade" price="₹2,150" change="-0.8%" />
-                <PriceRow icon="🍅" name="Tomato" grade="Hybrid F1" price="₹1,840" change="+5.1%" up />
-              </div>
-            </div>
+            <DashboardMarket />
           </div>
         </section>
 
-        {/* Government Schemes */}
-        <section className="px-4 md:px-6 py-16">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-8 text-center">Government Support</h2>
-            <div className="grid md:grid-cols-3 gap-5">
-              <SchemeCard tone="primary" tag="Direct Benefit" title="PM-KISAN Nidhi" body="Income support of ₹6,000 per year for all landholding farmers' families." cta="Check Eligibility" />
-              <SchemeCard tone="sky" tag="Crop Insurance" title="Fasal Bima Yojana" body="Comprehensive insurance coverage against non-preventable natural risks." cta="Apply Now" />
-              <SchemeCard tone="amber" tag="Modernization" title="Drone Subsidy" body="Up to 75% subsidy for purchasing agri-drones for pesticide spraying." cta="View Details" />
-            </div>
-          </div>
-        </section>
+        <DashboardSchemes />
       </main>
       <Footer />
     </>
