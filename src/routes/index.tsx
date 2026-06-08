@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState, type ReactNode } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { WeatherWidget } from "@/components/site/WeatherWidget";
 import { useI18n } from "@/lib/i18n";
-import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp } from "lucide-react";
+import { getMarketPrices, getSchemes, type MarketCrop, type Scheme } from "@/lib/agri-data.functions";
+import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp, ExternalLink, RefreshCw } from "lucide-react";
 import heroField from "@/assets/hero-field.jpg";
 import cropLeaf from "@/assets/crop-leaf.jpg";
 
@@ -152,37 +155,11 @@ function Landing() {
               <p className="text-sm text-foreground/60">Upload crop leaf photos for instant analysis and treatment plans.</p>
             </Link>
 
-            {/* Market */}
-            <div className="md:col-span-8 glass-panel p-6 md:p-8 rounded-[2rem]">
-              <div className="flex justify-between items-end mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold tracking-tight">Market Prices</h3>
-                  <p className="text-sm text-foreground/60">Daily updates from local Mandis</p>
-                </div>
-                <Link to="/market" className="text-sm font-bold text-primary px-4 py-2 bg-white/80 rounded-full border border-foreground/5 hover:bg-white">
-                  View All Crops
-                </Link>
-              </div>
-              <div className="space-y-3">
-                <PriceRow icon={<Wheat className="size-5 text-amber-700" />} name="Basmati Rice" grade="Grade A Premium" price="₹4,200" change="+2.4%" up />
-                <PriceRow icon="🌽" name="Yellow Maize" grade="Common Grade" price="₹2,150" change="-0.8%" />
-                <PriceRow icon="🍅" name="Tomato" grade="Hybrid F1" price="₹1,840" change="+5.1%" up />
-              </div>
-            </div>
+            <DashboardMarket />
           </div>
         </section>
 
-        {/* Government Schemes */}
-        <section className="px-4 md:px-6 py-16">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-8 text-center">Government Support</h2>
-            <div className="grid md:grid-cols-3 gap-5">
-              <SchemeCard tone="primary" tag="Direct Benefit" title="PM-KISAN Nidhi" body="Income support of ₹6,000 per year for all landholding farmers' families." cta="Check Eligibility" />
-              <SchemeCard tone="sky" tag="Crop Insurance" title="Fasal Bima Yojana" body="Comprehensive insurance coverage against non-preventable natural risks." cta="Apply Now" />
-              <SchemeCard tone="amber" tag="Modernization" title="Drone Subsidy" body="Up to 75% subsidy for purchasing agri-drones for pesticide spraying." cta="View Details" />
-            </div>
-          </div>
-        </section>
+        <DashboardSchemes />
       </main>
       <Footer />
     </>
@@ -191,7 +168,7 @@ function Landing() {
 
 function CTACard({
   to, icon, tint, title, body,
-}: { to: string; icon: React.ReactNode; tint: string; title: string; body: string }) {
+}: { to: string; icon: ReactNode; tint: string; title: string; body: string }) {
   return (
     <Link to={to} className="group glass-panel p-6 rounded-[2rem] hover:bg-white/65 transition-all cursor-pointer ring-1 ring-foreground/5">
       <div className={`size-12 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${tint}`}>
@@ -203,10 +180,76 @@ function CTACard({
   );
 }
 
+const fallbackCrops: MarketCrop[] = [
+  { name: "Basmati Rice", emoji: "🌾", grade: "Grade A Premium", price: 4200, change: 2.4, spark: [], state: "Punjab", mandi: "Karnal" },
+  { name: "Tomato", emoji: "🍅", grade: "Hybrid F1", price: 1840, change: 5.1, spark: [], state: "Maharashtra", mandi: "Nashik" },
+  { name: "Yellow Maize", emoji: "🌽", grade: "Common Grade", price: 2150, change: -0.8, spark: [], state: "Karnataka", mandi: "Davangere" },
+];
+
+function DashboardMarket() {
+  const loadMarket = useServerFn(getMarketPrices);
+  const [nonce, setNonce] = useState(0);
+  const [crops, setCrops] = useState<MarketCrop[]>(fallbackCrops);
+  const [updatedAt, setUpdatedAt] = useState("Live");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadMarket({ data: { query: "", state: "All", sort: "change", nonce } })
+      .then((res) => {
+        if (cancelled) return;
+        setCrops(res.crops.slice(0, 3));
+        setUpdatedAt(res.updatedAt);
+      })
+      .catch(() => {
+        if (!cancelled) setCrops(fallbackCrops);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadMarket, nonce]);
+
+  return (
+    <div className="md:col-span-8 glass-panel p-6 md:p-8 rounded-[2rem]">
+      <div className="flex flex-wrap justify-between items-end gap-3 mb-6">
+        <div>
+          <h3 className="text-2xl font-bold tracking-tight">Live Market Prices</h3>
+          <p className="text-sm text-foreground/60">Backend mandi feed · updated {updatedAt}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setNonce((n) => n + 1)}
+            className="size-10 rounded-full bg-white/80 border border-foreground/5 text-primary grid place-items-center hover:bg-white"
+            aria-label="Refresh market prices"
+          >
+            <RefreshCw className="size-4" />
+          </button>
+          <Link to="/market" className="text-sm font-bold text-primary px-4 py-2 bg-white/80 rounded-full border border-foreground/5 hover:bg-white">
+            View All Crops
+          </Link>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {crops.map((crop) => (
+          <PriceRow
+            key={`${crop.name}-${crop.mandi}`}
+            icon={crop.emoji === "🌾" ? <Wheat className="size-5 text-amber-700" /> : crop.emoji}
+            name={crop.name}
+            grade={`${crop.grade} · ${crop.mandi}`}
+            price={`₹${crop.price.toLocaleString("en-IN")}`}
+            change={`${crop.change >= 0 ? "+" : ""}${crop.change}%`}
+            up={crop.change >= 0}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 function PriceRow({
   icon, name, grade, price, change, up,
-}: { icon: React.ReactNode; name: string; grade: string; price: string; change: string; up?: boolean }) {
+}: { icon: ReactNode; name: string; grade: string; price: string; change: string; up?: boolean }) {
   return (
     <div className="flex items-center justify-between p-4 bg-white/45 rounded-2xl border border-white/60 hover:border-primary/30 transition-colors">
       <div className="flex items-center gap-4">
@@ -226,20 +269,74 @@ function PriceRow({
   );
 }
 
+const fallbackSchemes: Scheme[] = [
+  { tag: "Direct Benefit", tone: "primary", title: "PM-KISAN Nidhi", body: "Income support of ₹6,000 per year for all landholding farmers' families.", eligibility: "All landholding farmer families with valid land records.", benefits: "₹2,000 every 4 months directly to bank account.", url: "https://pmkisan.gov.in/" },
+  { tag: "Crop Insurance", tone: "sky", title: "Pradhan Mantri Fasal Bima Yojana", body: "Comprehensive crop insurance against natural calamities, pests and diseases.", eligibility: "Farmers growing notified crops in notified areas.", benefits: "Low premium with full eligible loss cover.", url: "https://pmfby.gov.in/" },
+  { tag: "Modernization", tone: "amber", title: "Sub-Mission on Agricultural Mechanization", body: "Subsidies on tractors, harvesters, and modern farm machinery.", eligibility: "Individual farmers and Farmer Producer Organisations.", benefits: "40%–80% subsidy on eligible equipment.", url: "https://agrimachinery.nic.in/" },
+];
+
+function DashboardSchemes() {
+  const loadSchemes = useServerFn(getSchemes);
+  const [schemes, setSchemes] = useState<Scheme[]>(fallbackSchemes);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadSchemes({ data: { query: "", category: "All" } })
+      .then((res) => {
+        if (!cancelled) setSchemes(res.schemes.slice(0, 3));
+      })
+      .catch(() => {
+        if (!cancelled) setSchemes(fallbackSchemes);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSchemes]);
+
+  return (
+    <section className="px-4 md:px-6 py-16">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Government Support</h2>
+            <p className="mt-2 text-sm text-foreground/60">Backend-powered scheme finder with official application links.</p>
+          </div>
+          <Link to="/schemes" className="rounded-full bg-white/80 px-5 py-2 text-sm font-bold text-primary border border-foreground/5 hover:bg-white">
+            Browse All Schemes
+          </Link>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5">
+          {schemes.map((scheme) => (
+            <SchemeCard key={scheme.title} scheme={scheme} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SchemeCard({
-  tone, tag, title, body, cta,
-}: { tone: "primary" | "sky" | "amber"; tag: string; title: string; body: string; cta: string }) {
+  scheme,
+}: { scheme: Scheme }) {
   const toneMap = {
     primary: { border: "border-l-primary", text: "text-primary", bg: "bg-primary/10" },
     sky: { border: "border-l-[color:var(--sky-brand)]", text: "text-[color:var(--sky-brand)]", bg: "bg-[color:var(--sky-brand)]/10" },
     amber: { border: "border-l-[color:var(--amber-brand)]", text: "text-[color:var(--amber-brand)]", bg: "bg-[color:var(--amber-brand)]/10" },
-  }[tone];
+  }[scheme.tone];
   return (
-    <div className={`glass-panel p-7 rounded-[2rem] border-l-4 ${toneMap.border}`}>
-      <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${toneMap.text}`}>{tag}</p>
-      <h4 className="text-xl font-bold mb-3">{title}</h4>
-      <p className="text-sm text-foreground/60 mb-6">{body}</p>
-      <button className={`w-full py-3 rounded-xl text-xs font-bold border border-foreground/5 ${toneMap.bg} ${toneMap.text}`}>{cta}</button>
+    <div className={`glass-panel p-7 rounded-[2rem] border-l-4 ${toneMap.border} flex flex-col`}>
+      <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${toneMap.text}`}>{scheme.tag}</p>
+      <h4 className="text-xl font-bold mb-3">{scheme.title}</h4>
+      <p className="text-sm text-foreground/60 mb-4">{scheme.body}</p>
+      <p className="text-xs text-foreground/55 mb-6 flex-grow"><span className="font-bold text-foreground/70">Benefit:</span> {scheme.benefits}</p>
+      <a
+        href={scheme.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`w-full py-3 rounded-xl text-xs font-bold border border-foreground/5 ${toneMap.bg} ${toneMap.text} flex items-center justify-center gap-1.5 hover:bg-white/70 transition`}
+      >
+        Visit Official Portal <ExternalLink className="size-3" />
+      </a>
     </div>
   );
 }

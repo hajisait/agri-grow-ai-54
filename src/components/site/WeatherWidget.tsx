@@ -15,20 +15,23 @@ export function WeatherWidget() {
   const [place, setPlace] = useState<Saved | null>(null);
   const [wx, setWx] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load(p: Saved) {
       setLoading(true);
+      setNotice(null);
       try {
         const data = await fetchWx({ data: { latitude: p.latitude, longitude: p.longitude } });
         if (!cancelled) {
           setPlace(p);
           setWx(data);
+          setNotice(data.source === "backup" ? "Using backup forecast while live climate feed reconnects." : null);
         }
       } catch {
-        /* ignore */
+        if (!cancelled) setNotice("Weather is temporarily unavailable. Open Weather to retry.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -45,7 +48,11 @@ export function WeatherWidget() {
       return false;
     }
 
-    const onPlaceChanged = () => loadSavedOrDefault();
+    const onPlaceChanged = (event: Event) => {
+      const next = (event as CustomEvent<Saved>).detail;
+      if (next?.latitude && next?.longitude) void load(next);
+      else loadSavedOrDefault();
+    };
     window.addEventListener("agriai:place-changed", onPlaceChanged);
 
     if (loadSavedOrDefault()) {
@@ -73,7 +80,7 @@ export function WeatherWidget() {
             } catch {}
             await load(p);
           } catch {
-            if (!cancelled) setLoading(false);
+            void load(DEFAULT_PLACE);
           }
         },
         () => {
@@ -96,7 +103,12 @@ export function WeatherWidget() {
   return (
     <div className="md:col-span-4 glass-panel p-6 md:p-8 rounded-[2rem] flex flex-col justify-between">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-1">{t("weather.title")}</h2>
+        <div className="mb-1 flex items-start justify-between gap-3">
+          <h2 className="text-2xl font-bold tracking-tight">{t("weather.title")}</h2>
+          <Link to="/weather" className="rounded-full bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary transition hover:bg-white">
+            Open
+          </Link>
+        </div>
         <p className="text-sm text-foreground/60 mb-6 flex items-center gap-1.5">
           <MapPin className="size-3.5" />
           {place ? (
@@ -124,6 +136,7 @@ export function WeatherWidget() {
         </div>
       </div>
       <div className="mt-8 pt-6 border-t border-foreground/5">
+        {notice ? <p className="mb-3 text-xs font-semibold text-foreground/55">{notice}</p> : null}
         <p className="text-sm font-semibold text-[color:var(--sky-brand)] flex items-center gap-2">
           <span className="size-2 bg-[color:var(--sky-brand)] rounded-full" />
           {rainProb >= 50 ? t("weather.rainsoon") : t("weather.norain")}
