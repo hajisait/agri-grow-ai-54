@@ -269,20 +269,74 @@ function PriceRow({
   );
 }
 
+const fallbackSchemes: Scheme[] = [
+  { tag: "Direct Benefit", tone: "primary", title: "PM-KISAN Nidhi", body: "Income support of ₹6,000 per year for all landholding farmers' families.", eligibility: "All landholding farmer families with valid land records.", benefits: "₹2,000 every 4 months directly to bank account.", url: "https://pmkisan.gov.in/" },
+  { tag: "Crop Insurance", tone: "sky", title: "Pradhan Mantri Fasal Bima Yojana", body: "Comprehensive crop insurance against natural calamities, pests and diseases.", eligibility: "Farmers growing notified crops in notified areas.", benefits: "Low premium with full eligible loss cover.", url: "https://pmfby.gov.in/" },
+  { tag: "Modernization", tone: "amber", title: "Sub-Mission on Agricultural Mechanization", body: "Subsidies on tractors, harvesters, and modern farm machinery.", eligibility: "Individual farmers and Farmer Producer Organisations.", benefits: "40%–80% subsidy on eligible equipment.", url: "https://agrimachinery.nic.in/" },
+];
+
+function DashboardSchemes() {
+  const loadSchemes = useServerFn(getSchemes);
+  const [schemes, setSchemes] = useState<Scheme[]>(fallbackSchemes);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadSchemes({ data: { query: "", category: "All" } })
+      .then((res) => {
+        if (!cancelled) setSchemes(res.schemes.slice(0, 3));
+      })
+      .catch(() => {
+        if (!cancelled) setSchemes(fallbackSchemes);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSchemes]);
+
+  return (
+    <section className="px-4 md:px-6 py-16">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Government Support</h2>
+            <p className="mt-2 text-sm text-foreground/60">Backend-powered scheme finder with official application links.</p>
+          </div>
+          <Link to="/schemes" className="rounded-full bg-white/80 px-5 py-2 text-sm font-bold text-primary border border-foreground/5 hover:bg-white">
+            Browse All Schemes
+          </Link>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5">
+          {schemes.map((scheme) => (
+            <SchemeCard key={scheme.title} scheme={scheme} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SchemeCard({
-  tone, tag, title, body, cta,
-}: { tone: "primary" | "sky" | "amber"; tag: string; title: string; body: string; cta: string }) {
+  scheme,
+}: { scheme: Scheme }) {
   const toneMap = {
     primary: { border: "border-l-primary", text: "text-primary", bg: "bg-primary/10" },
     sky: { border: "border-l-[color:var(--sky-brand)]", text: "text-[color:var(--sky-brand)]", bg: "bg-[color:var(--sky-brand)]/10" },
     amber: { border: "border-l-[color:var(--amber-brand)]", text: "text-[color:var(--amber-brand)]", bg: "bg-[color:var(--amber-brand)]/10" },
-  }[tone];
+  }[scheme.tone];
   return (
-    <div className={`glass-panel p-7 rounded-[2rem] border-l-4 ${toneMap.border}`}>
-      <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${toneMap.text}`}>{tag}</p>
-      <h4 className="text-xl font-bold mb-3">{title}</h4>
-      <p className="text-sm text-foreground/60 mb-6">{body}</p>
-      <button className={`w-full py-3 rounded-xl text-xs font-bold border border-foreground/5 ${toneMap.bg} ${toneMap.text}`}>{cta}</button>
+    <div className={`glass-panel p-7 rounded-[2rem] border-l-4 ${toneMap.border} flex flex-col`}>
+      <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${toneMap.text}`}>{scheme.tag}</p>
+      <h4 className="text-xl font-bold mb-3">{scheme.title}</h4>
+      <p className="text-sm text-foreground/60 mb-4">{scheme.body}</p>
+      <p className="text-xs text-foreground/55 mb-6 flex-grow"><span className="font-bold text-foreground/70">Benefit:</span> {scheme.benefits}</p>
+      <a
+        href={scheme.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`w-full py-3 rounded-xl text-xs font-bold border border-foreground/5 ${toneMap.bg} ${toneMap.text} flex items-center justify-center gap-1.5 hover:bg-white/70 transition`}
+      >
+        Visit Official Portal <ExternalLink className="size-3" />
+      </a>
     </div>
   );
 }
