@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { CloudSun, Wind, MapPin } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { getWeather, reverseGeocode, type WeatherData } from "@/lib/weather.functions";
+import { AppLink } from "@/lib/spa-router";
+import { getWeather, reverseGeocode, type WeatherData } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 
 type Saved = { name: string; admin1?: string; country?: string; latitude: number; longitude: number };
@@ -10,8 +9,6 @@ const DEFAULT_PLACE: Saved = { name: "New Delhi", admin1: "Delhi", country: "Ind
 
 export function WeatherWidget() {
   const { t } = useI18n();
-  const fetchWx = useServerFn(getWeather);
-  const reverse = useServerFn(reverseGeocode);
   const [place, setPlace] = useState<Saved | null>(null);
   const [wx, setWx] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +21,7 @@ export function WeatherWidget() {
       setLoading(true);
       setNotice(null);
       try {
-        const data = await fetchWx({ data: { latitude: p.latitude, longitude: p.longitude } });
+        const data = await getWeather({ latitude: p.latitude, longitude: p.longitude });
         if (!cancelled) {
           setPlace(p);
           setWx(data);
@@ -67,7 +64,7 @@ export function WeatherWidget() {
         async (pos) => {
           const { latitude, longitude } = pos.coords;
           try {
-            const r = await reverse({ data: { latitude, longitude } });
+            const r = await reverseGeocode({ latitude, longitude });
             const p: Saved = {
               name: r.place?.name ?? "My location",
               admin1: r.place?.admin1,
@@ -96,7 +93,7 @@ export function WeatherWidget() {
       cancelled = true;
       window.removeEventListener("agriai:place-changed", onPlaceChanged);
     };
-  }, [fetchWx, reverse]);
+  }, []);
 
   const rainProb = wx?.daily.precipitation_probability_max.slice(0, 2).reduce((a, b) => Math.max(a, b ?? 0), 0) ?? 0;
 
@@ -105,9 +102,9 @@ export function WeatherWidget() {
       <div>
         <div className="mb-1 flex items-start justify-between gap-3">
           <h2 className="text-2xl font-bold tracking-tight">{t("weather.title")}</h2>
-          <Link to="/weather" className="rounded-full bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary transition hover:bg-white">
+          <AppLink to="/weather" className="rounded-full bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary transition hover:bg-white">
             Open
-          </Link>
+          </AppLink>
         </div>
         <p className="text-sm text-foreground/60 mb-6 flex items-center gap-1.5">
           <MapPin className="size-3.5" />
@@ -119,9 +116,9 @@ export function WeatherWidget() {
           ) : loading ? (
             t("weather.locating")
           ) : (
-            <Link to="/weather" className="text-primary underline">
+            <AppLink to="/weather" className="text-primary underline">
               {t("weather.setlocation")}
-            </Link>
+            </AppLink>
           )}
         </p>
         <div className="flex items-center gap-4 mb-8">
