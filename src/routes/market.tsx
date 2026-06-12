@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Search, TrendingDown, TrendingUp, ArrowUpDown, ExternalLink, RefreshCw } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { useI18n } from "@/lib/i18n";
-import { getMarketPrices, type MarketCrop } from "@/lib/agri-data.functions";
+import { getMarketPrices, type MarketCrop } from "@/lib/api-client";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
@@ -21,9 +20,8 @@ export const Route = createFileRoute("/market")({
 
 type SortKey = "name" | "price" | "change";
 
-function MarketPage() {
+export function MarketPage() {
   const { t } = useI18n();
-  const loadMarket = useServerFn(getMarketPrices);
   const [query, setQuery] = useState("");
   const [state, setState] = useState("All");
   const [sort, setSort] = useState<SortKey>("change");
@@ -36,7 +34,7 @@ function MarketPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    loadMarket({ data: { query, state, sort, nonce } })
+    getMarketPrices({ query, state, sort, nonce })
       .then((res) => {
         if (cancelled) return;
         setCrops(res.crops);
@@ -49,7 +47,7 @@ function MarketPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadMarket, query, state, sort, nonce]);
+  }, [query, state, sort, nonce]);
 
   return (
     <>
