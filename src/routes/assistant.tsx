@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Mic, Send, Sparkles } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
-import { askAgriAI } from "@/lib/chat.functions";
+import { askAgriAI } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/assistant")({
@@ -28,9 +27,8 @@ const SUGGESTIONS = [
   "How much water does cotton need?",
 ];
 
-function AssistantPage() {
+export function AssistantPage() {
   const { t, lang } = useI18n();
-  const ask = useServerFn(askAgriAI);
   const [messages, setMessages] = useState<Msg[]>([
     { role: "assistant", content: "Hi! I'm AgriAI 🌱 — your farming co-pilot. Ask me anything about crops, soil, weather, pests, or schemes." },
   ]);
@@ -52,7 +50,7 @@ function AssistantPage() {
     setInput("");
     setLoading(true);
     try {
-      const res = await ask({ data: { messages: next.map((m) => ({ role: m.role, content: m.content })), language: lang } });
+      const res = await askAgriAI({ messages: next.map((m) => ({ role: m.role, content: m.content })), language: lang });
       setMessages([...next, { role: "assistant", content: res.reply }]);
     } catch {
       setMessages([...next, { role: "assistant", content: "Sorry, something went wrong. Please try again." }]);

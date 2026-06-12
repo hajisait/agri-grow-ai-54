@@ -1,0 +1,65 @@
+import type { ChatMessage, GeoResult, MarketCrop, Scheme, WeatherData } from "./agri-core";
+import { buildBackupWeather, fallbackPlace, getMarketSnapshot, getSchemeSnapshot, nearestFallback } from "./agri-core";
+
+const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agri-api`;
+const PUBLIC_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function requestApi<T>(action: string, payload: Record<string, unknown>): Promise<T> {
+  if (!FUNCTION_URL || FUNCTION_URL.includes("undefined")) throw new Error("Backend URL missing");
+  const res = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(PUBLIC_KEY ? { Authorization: `Bearer ${PUBLIC_KEY}` } : {}),
+    },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  if (!res.ok) throw new Error(`Backend ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+export async function askAgriAI(data: { messages: ChatMessage[]; language?: string; imageDataUrl?: string; crop?: string; userSymptoms?: string }) {
+  return requestApi<{ reply: string; error: string | null }>("ask", data as unknown as Record<string, unknown>);
+}
+
+export async function geocodePlace(data: { query: string }) {
+  try {
+    return await requestApi<{ place: GeoResult | null }>("geocode", data);
+  } catch {
+    return { place: fallbackPlace(data.query) };
+  }
+}
+
+export async function reverseGeocode(data: { latitude: number; longitude: number }) {
+  try {
+    return await requestApi<{ place: GeoResult }>("reverseGeocode", data);
+  } catch {
+    return { place: nearestFallback(data.latitude, data.longitude) };
+  }
+}
+
+export async function getWeather(data: { latitude: number; longitude: number }) {
+  try {
+    return await requestApi<WeatherData>("weather", data);
+  } catch {
+    return buildBackupWeather(data.latitude, data.longitude);
+  }
+}
+
+export async function getMarketPrices(data: { query?: string; state?: string; sort?: "name" | "price" | "change"; nonce?: number }) {
+  try {
+    return await requestApi<{ crops: MarketCrop[]; states: string[]; updatedAt: string }>("market", data);
+  } catch {
+    return getMarketSnapshot(data);
+  }
+}
+
+export async function getSchemes(data: { query?: string; category?: string }) {
+  try {
+    return await requestApi<{ schemes: Scheme[]; categories: string[] }>("schemes", data);
+  } catch {
+    return getSchemeSnapshot(data);
+  }
+}
+
+export type { MarketCrop, Scheme, WeatherData };

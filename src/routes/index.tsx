@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { WeatherWidget } from "@/components/site/WeatherWidget";
 import { useI18n } from "@/lib/i18n";
-import { getMarketPrices, getSchemes, type MarketCrop, type Scheme } from "@/lib/agri-data.functions";
+import { getMarketPrices, getSchemes, type MarketCrop, type Scheme } from "@/lib/api-client";
 import { CloudSun, Mic, Sparkles, Camera, Wheat, TrendingDown, TrendingUp, ExternalLink, RefreshCw } from "lucide-react";
 import heroField from "@/assets/hero-field.jpg";
 import cropLeaf from "@/assets/crop-leaf.jpg";
@@ -30,7 +29,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-function Landing() {
+export function Landing() {
   const { t } = useI18n();
   return (
     <>
@@ -187,14 +186,13 @@ const fallbackCrops: MarketCrop[] = [
 ];
 
 function DashboardMarket() {
-  const loadMarket = useServerFn(getMarketPrices);
   const [nonce, setNonce] = useState(0);
   const [crops, setCrops] = useState<MarketCrop[]>(fallbackCrops);
   const [updatedAt, setUpdatedAt] = useState("Live");
 
   useEffect(() => {
     let cancelled = false;
-    loadMarket({ data: { query: "", state: "All", sort: "change", nonce } })
+    getMarketPrices({ query: "", state: "All", sort: "change", nonce })
       .then((res) => {
         if (cancelled) return;
         setCrops(res.crops.slice(0, 3));
@@ -206,7 +204,7 @@ function DashboardMarket() {
     return () => {
       cancelled = true;
     };
-  }, [loadMarket, nonce]);
+  }, [nonce]);
 
   return (
     <div className="md:col-span-8 glass-panel p-6 md:p-8 rounded-[2rem]">
@@ -276,12 +274,11 @@ const fallbackSchemes: Scheme[] = [
 ];
 
 function DashboardSchemes() {
-  const loadSchemes = useServerFn(getSchemes);
   const [schemes, setSchemes] = useState<Scheme[]>(fallbackSchemes);
 
   useEffect(() => {
     let cancelled = false;
-    loadSchemes({ data: { query: "", category: "All" } })
+    getSchemes({ query: "", category: "All" })
       .then((res) => {
         if (!cancelled) setSchemes(res.schemes.slice(0, 3));
       })
@@ -291,7 +288,7 @@ function DashboardSchemes() {
     return () => {
       cancelled = true;
     };
-  }, [loadSchemes]);
+  }, []);
 
   return (
     <section className="px-4 md:px-6 py-16">

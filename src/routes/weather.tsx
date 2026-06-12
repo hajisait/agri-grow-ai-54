@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Search, CloudSun, Droplets, Wind, Thermometer, MapPin, LocateFixed } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
-import { geocodePlace, getWeather, reverseGeocode, type WeatherData } from "@/lib/weather.functions";
+import { geocodePlace, getWeather, reverseGeocode, type WeatherData } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/weather")({
@@ -29,11 +28,8 @@ const WMO: Record<number, string> = {
   80: "Showers", 81: "Heavy showers", 82: "Violent showers", 95: "Thunderstorm", 96: "Thunderstorm + hail", 99: "Severe storm",
 };
 
-function WeatherPage() {
+export function WeatherPage() {
   const { t } = useI18n();
-  const geocode = useServerFn(geocodePlace);
-  const fetchWeather = useServerFn(getWeather);
-  const reverse = useServerFn(reverseGeocode);
   const [query, setQuery] = useState("");
   const [place, setPlace] = useState<Place | null>(null);
   const [current, setCurrent] = useState<WeatherData["current"] | null>(null);
@@ -47,7 +43,7 @@ function WeatherPage() {
       localStorage.setItem("agriai_place", JSON.stringify(p));
       window.dispatchEvent(new CustomEvent("agriai:place-changed", { detail: p }));
     } catch {}
-    const wx = await fetchWeather({ data: { latitude: p.latitude, longitude: p.longitude } });
+    const wx = await getWeather({ latitude: p.latitude, longitude: p.longitude });
     setCurrent(wx.current);
     setDaily(wx.daily);
   }
@@ -70,7 +66,7 @@ function WeatherPage() {
     setLoading(true);
     setError(null);
     try {
-      const geo = await geocode({ data: { query } });
+      const geo = await geocodePlace({ query });
       const first = geo.place;
       if (!first) {
         setError("Location not found. Try another village or city.");
@@ -99,7 +95,7 @@ function WeatherPage() {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          const rev = await reverse({ data: { latitude, longitude } });
+          const rev = await reverseGeocode({ latitude, longitude });
           const first = rev.place;
           await loadWeather({
             name: first?.name ?? "My location",

@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Search, ExternalLink } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { useI18n } from "@/lib/i18n";
-import { getSchemes, type Scheme } from "@/lib/agri-data.functions";
+import { getSchemes, type Scheme } from "@/lib/api-client";
 
 export const Route = createFileRoute("/schemes")({
   head: () => ({
@@ -26,9 +25,8 @@ const TONE: Record<Tone, { border: string; text: string; bg: string }> = {
   amber: { border: "border-l-[color:var(--amber-brand)]", text: "text-[color:var(--amber-brand)]", bg: "bg-[color:var(--amber-brand)]/15 hover:bg-[color:var(--amber-brand)]/25" },
 };
 
-function SchemesPage() {
+export function SchemesPage() {
   const { t } = useI18n();
-  const loadSchemes = useServerFn(getSchemes);
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const [list, setList] = useState<Scheme[]>([]);
@@ -36,7 +34,7 @@ function SchemesPage() {
 
   useEffect(() => {
     let cancelled = false;
-    loadSchemes({ data: { query, category: cat } }).then((res) => {
+    getSchemes({ query, category: cat }).then((res) => {
       if (cancelled) return;
       setList(res.schemes);
       setCategories(res.categories);
@@ -44,7 +42,7 @@ function SchemesPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadSchemes, query, cat]);
+  }, [query, cat]);
 
   return (
     <>
