@@ -38,12 +38,8 @@ export function Nav() {
             </span>
           ))}
         </div>
-        <Link
-          to="/assistant"
-          className="bg-primary text-primary-foreground px-4 md:px-5 py-2 rounded-full text-sm font-bold shadow-[var(--shadow-glow-primary)] hover:scale-[1.03] transition-transform"
-        >
-          {t("nav.signin")}
-        </Link>
+      </div>
+
       </div>
     </nav>
   );
