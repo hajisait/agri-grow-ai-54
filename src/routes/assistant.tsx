@@ -25,6 +25,14 @@ const SUGGESTIONS = [
   "Why are my tomato leaves yellow?",
   "Will it rain in Coimbatore tomorrow?",
   "How much water does cotton need?",
+  "How to control aphids on chilli plants naturally?",
+  "Which crop is most profitable in Maharashtra this season?",
+  "Soil preparation tips for wheat sowing",
+  "What government scheme helps small farmers buy a tractor?",
+  "Signs of nitrogen deficiency in maize?",
+  "Best drip irrigation schedule for tomatoes",
+  "How to store onions to prevent rotting?",
+  "Organic pesticide recipe for brinjal",
 ];
 
 export function AssistantPage() {
