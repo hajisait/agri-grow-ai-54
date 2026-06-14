@@ -46,22 +46,14 @@ const SCHEMES: Scheme[] = [
   { tag: "Marketing", tone: "amber", title: "e-NAM", body: "Pan-India electronic trading portal that networks agricultural mandis for a unified national market.", eligibility: "Registered farmers and traders.", benefits: "Better price discovery and transparent auctions.", url: "https://www.enam.gov.in/" },
 ];
 
-const hits = new Map<string, { count: number; reset: number }>();
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MAX_HISTORY_MESSAGES = 16;
+const MAX_TEXT_CHARS = 4000;
+const MAX_IMAGE_DATA_URL_CHARS = 5_500_000;
+const AI_TIMEOUT_MS = 42_000;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
-
-function rateLimit(ip: string) {
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (!entry || now > entry.reset) {
-    hits.set(ip, { count: 1, reset: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count += 1;
-  return true;
 }
 
 function sanitizeUserText(input: string) {
