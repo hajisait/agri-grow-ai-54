@@ -197,8 +197,8 @@ Deno.serve(async (req) => {
       const imageDataUrl = typeof body.imageDataUrl === "string" && /^data:image\/(png|jpeg|jpg|webp);base64,/.test(body.imageDataUrl)
         ? body.imageDataUrl.slice(0, MAX_IMAGE_DATA_URL_CHARS)
         : undefined;
-      const lastMessage = body.imageDataUrl
-        ? { role: "user", content: [{ type: "text", text: safeText }, { type: "image_url", image_url: { url: String(body.imageDataUrl).slice(0, 6_000_000) } }] }
+      const lastMessage = imageDataUrl
+        ? { role: "user", content: [{ type: "text", text: safeText }, { type: "image_url", image_url: { url: imageDataUrl } }] }
         : { role: "user", content: safeText };
 
       const ai = await fetchJsonWithTimeout(AI_GATEWAY_URL, {
@@ -227,6 +227,7 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
     console.error(error);
+    if (action === "ask") return json({ reply: "The AI backend took too long or had a network issue. Please try again.", error: "network_error" }, 200);
     return json({ error: "Request failed" }, 500);
   }
 });
