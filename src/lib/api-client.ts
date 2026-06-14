@@ -1,8 +1,9 @@
 import type { ChatMessage, GeoResult, MarketCrop, Scheme, WeatherData } from "./agri-core";
 import { buildBackupWeather, fallbackPlace, getMarketSnapshot, getSchemeSnapshot, nearestFallback } from "./agri-core";
 
-const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agri-api`;
-const PUBLIC_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const BACKEND_URL = import.meta.env.VITE_SUPABASE_URL || "https://utevxpbwjmgnwkejqqkt.supabase.co";
+const PUBLIC_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXZ4cGJ3am1nbndrZWpxcWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDM4NTQsImV4cCI6MjA5NjMxOTg1NH0.Omg9C12nrvPOqSYALi_1fKqu3Diyo1wIfJV9UFI5C4c";
+const FUNCTION_URL = `${BACKEND_URL}/functions/v1/agri-api`;
 
 async function requestApi<T>(action: string, payload: Record<string, unknown>): Promise<T> {
   if (!FUNCTION_URL || FUNCTION_URL.includes("undefined")) throw new Error("Backend URL missing");
