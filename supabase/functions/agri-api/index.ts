@@ -111,6 +111,26 @@ async function fetchWithTimeout(url: string) {
   try { return await fetch(url, { signal: controller.signal }); } finally { clearTimeout(timer); }
 }
 
+async function fetchJsonWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function safeMessages(messages: unknown[]) {
+  return messages.slice(-MAX_HISTORY_MESSAGES).map((m) => {
+    const item = m as { role?: string; content?: unknown };
+    return {
+      role: ["user", "assistant"].includes(String(item.role)) ? String(item.role) : "user",
+      content: String(item.content ?? "").slice(0, MAX_TEXT_CHARS),
+    };
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
