@@ -46,22 +46,14 @@ const SCHEMES: Scheme[] = [
   { tag: "Marketing", tone: "amber", title: "e-NAM", body: "Pan-India electronic trading portal that networks agricultural mandis for a unified national market.", eligibility: "Registered farmers and traders.", benefits: "Better price discovery and transparent auctions.", url: "https://www.enam.gov.in/" },
 ];
 
-const hits = new Map<string, { count: number; reset: number }>();
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MAX_HISTORY_MESSAGES = 16;
+const MAX_TEXT_CHARS = 4000;
+const MAX_IMAGE_DATA_URL_CHARS = 5_500_000;
+const AI_TIMEOUT_MS = 42_000;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
-
-function rateLimit(ip: string) {
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (!entry || now > entry.reset) {
-    hits.set(ip, { count: 1, reset: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count += 1;
-  return true;
 }
 
 function sanitizeUserText(input: string) {
@@ -117,6 +109,26 @@ async function fetchWithTimeout(url: string) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try { return await fetch(url, { signal: controller.signal }); } finally { clearTimeout(timer); }
+}
+
+async function fetchJsonWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function safeMessages(messages: unknown[]) {
+  return messages.slice(-MAX_HISTORY_MESSAGES).map((m) => {
+    const item = m as { role?: string; content?: unknown };
+    return {
+      role: ["user", "assistant"].includes(String(item.role)) ? String(item.role) : "user",
+      content: String(item.content ?? "").slice(0, MAX_TEXT_CHARS),
+    };
+  });
 }
 
 Deno.serve(async (req) => {
@@ -176,33 +188,38 @@ Deno.serve(async (req) => {
     }
 
     if (action === "ask") {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-      if (!rateLimit(ip)) return json({ reply: "Too many requests. Please wait a minute and try again.", error: "rate_limited" });
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (!apiKey) return json({ reply: "AI is not configured. Please contact the administrator.", error: "missing_key" });
 
-      const messages = Array.isArray(body.messages) ? body.messages.slice(0, 20) : [];
+      const messages = Array.isArray(body.messages) ? safeMessages(body.messages) : [];
       const last = messages[messages.length - 1] ?? { role: "user", content: "" };
       const safeText = `<user_input>${sanitizeUserText(String(last.content ?? ""))}</user_input>${body.crop ? `\n<crop>${String(body.crop).slice(0, 40)}</crop>` : ""}${body.userSymptoms ? `\n<user_symptoms>${sanitizeUserText(String(body.userSymptoms))}</user_symptoms>` : ""}`;
-      const lastMessage = body.imageDataUrl
-        ? { role: "user", content: [{ type: "text", text: safeText }, { type: "image_url", image_url: { url: String(body.imageDataUrl).slice(0, 6_000_000) } }] }
+      const imageDataUrl = typeof body.imageDataUrl === "string" && /^data:image\/(png|jpeg|jpg|webp);base64,/.test(body.imageDataUrl)
+        ? body.imageDataUrl.slice(0, MAX_IMAGE_DATA_URL_CHARS)
+        : undefined;
+      const lastMessage = imageDataUrl
+        ? { role: "user", content: [{ type: "text", text: safeText }, { type: "image_url", image_url: { url: imageDataUrl } }] }
         : { role: "user", content: safeText };
 
-      const ai = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const ai = await fetchJsonWithTimeout(AI_GATEWAY_URL, {
         method: "POST",
-        headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
+        headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "edge-function", "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: `You are AgriAI Assist, a friendly expert advisor for farmers. Answer concisely with practical guidance on crops, soil, fertilizer, irrigation, pests, weather, and government schemes. Reply in ${languageName(body.language)}.` },
-            ...messages.slice(0, -1).map((m) => ({ role: ["user", "assistant", "system"].includes(m.role) ? m.role : "user", content: String(m.content ?? "").slice(0, 8000) })),
+            { role: "system", content: `You are AgriAI Assist, a friendly expert advisor for farmers in India. Answer concisely with practical, safe guidance on crops, soil, fertilizer, irrigation, pests, weather, market prices, and government schemes. For disease photos, say when confidence is low and recommend local expert confirmation before chemicals. Reply in ${languageName(body.language)}.` },
+            ...messages.slice(0, -1),
             lastMessage,
           ],
         }),
-      });
+      }, AI_TIMEOUT_MS);
       if (ai.status === 429) return json({ reply: "Too many requests. Please try again in a moment.", error: "rate_limited" });
       if (ai.status === 402) return json({ reply: "AI usage quota exhausted. Please add credits to your workspace.", error: "payment_required" });
-      if (!ai.ok) return json({ reply: "Sorry, the assistant is temporarily unavailable.", error: "gateway_error" });
+      if (!ai.ok) {
+        const detail = await ai.text().catch(() => "");
+        console.error("AI gateway error", ai.status, detail.slice(0, 500));
+        return json({ reply: "Sorry, the assistant is temporarily unavailable. Please try again shortly.", error: "gateway_error" }, 200);
+      }
       const data = await ai.json();
       return json({ reply: data.choices?.[0]?.message?.content?.trim() || "I couldn't generate a response. Please try again.", error: null });
     }
@@ -210,6 +227,7 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
     console.error(error);
+    if (action === "ask") return json({ reply: "The AI backend took too long or had a network issue. Please try again.", error: "network_error" }, 200);
     return json({ error: "Request failed" }, 500);
   }
 });
